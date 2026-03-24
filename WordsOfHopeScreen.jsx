@@ -22,6 +22,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Glossary panel toggle
     const [level, setLevel] = useState(1); // Track current level/wave
     const [difficulty, setDifficulty] = useState('NORMAL'); // EASY, NORMAL, HARD
+    const [localPaused, setLocalPaused] = useState(false); // Local pause state
 
     // Refs for Game Loop (Prevents stale closures)
     const scoreRef = useRef(0);
@@ -130,6 +131,28 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         return () => { if (alertTimerRef.current) clearTimeout(alertTimerRef.current); };
     }, [stigmaAlert]);
 
+    // Toggle Pause
+    const togglePause = () => {
+        if (gameState !== 'PLAYING') return;
+        setLocalPaused(prev => {
+            const next = !prev;
+            if (next) audioManager.pauseAll();
+            else audioManager.resumeAll();
+            return next;
+        });
+    };
+
+    // Keyboard Listeners
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+                togglePause();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [gameState]);
+
     // Handle Mouse/Touch Movement
     const handlePointerMove = (e) => {
         if (gameState !== 'PLAYING' || isPaused || !gameContainerRef.current) return;
@@ -154,7 +177,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
 
     // The Game Loop
     const update = () => {
-        if (gameState !== 'PLAYING' || isPaused) {
+        if (gameState !== 'PLAYING' || isPaused || localPaused) {
             requestRef.current = requestAnimationFrame(update);
             return;
         }
@@ -502,8 +525,52 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     >
                         Exit Path
                     </button>
+
+                    <button
+                        onClick={togglePause}
+                        className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white p-2 rounded-full transition-all hover:scale-105 active:scale-95"
+                        title="Pause Game (P)"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            {localPaused ?
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                :
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            }
+                        </svg>
+                    </button>
                 </div>
             </div>
+
+            {/* PAUSE OVERLAY */}
+            {localPaused && (
+                <div className="fixed inset-0 z-[2000] bg-slate-900/60 backdrop-blur-md flex items-center justify-center animate-fade-in">
+                    <div className="bg-white rounded-3xl p-10 max-w-sm w-full shadow-4xl text-center animate-scale-in">
+                        <div className="w-20 h-20 bg-teal-100 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+                            <svg className="w-10 h-10 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tighter">Path Paused</h2>
+                        <p className="text-slate-500 font-medium mb-8">Take a moment to breathe. The path will wait for you.</p>
+                        
+                        <div className="space-y-3">
+                            <button 
+                                onClick={togglePause} 
+                                className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-teal-400 transition-all"
+                            >
+                                Resume Journey
+                            </button>
+                            <button 
+                                onClick={onExit} 
+                                className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-50 hover:text-red-500 transition-all"
+                            >
+                                Exit Quietly
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {gameState === 'LEVEL_SELECT' && (
                 <div className="relative z-10 max-w-4xl w-full p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-level-select">
