@@ -50,6 +50,13 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         // Initial shuffle
         setShuffledQuestions([...TERMINOLOGY_DATA.questions].sort(() => Math.random() - 0.5));
 
+        // Start music as early as possible (user click may be required in some browsers, 
+        // but since they usually have to interact with something to reach here, it should work)
+        if (audioManager) {
+            audioManager.init();
+            audioManager.startAmbient('park');
+        }
+
         // SPLASH SCREEN AUTO-TRANSITION
         if (gameState === 'INTRO') {
             const timer = setTimeout(() => {
