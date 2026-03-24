@@ -49,7 +49,15 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     useEffect(() => {
         // Initial shuffle
         setShuffledQuestions([...TERMINOLOGY_DATA.questions].sort(() => Math.random() - 0.5));
-    }, []);
+
+        // SPLASH SCREEN AUTO-TRANSITION
+        if (gameState === 'INTRO') {
+            const timer = setTimeout(() => {
+                startGame();
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [gameState]);
 
     const startGame = () => {
         // Shuffle again for a fresh start each time
@@ -485,7 +493,12 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                         Identify the phrases of <span className="text-white font-bold underline decoration-teal-500 underline-offset-4">Hope</span> and let the <span className="text-slate-500 font-bold">Thorns of Stigma</span> fall.
                         <br /><span className="text-teal-400 font-black text-sm uppercase tracking-widest mt-4 block">Goal: Collect 4 Seeds of Wisdom</span>
                     </p>
-                    <button onClick={startGame} className="px-12 py-5 bg-white text-slate-900 rounded-2xl font-black uppercase tracking-widest text-lg shadow-2xl hover:bg-teal-50 transition-all hover:-translate-y-1">Begin The Path</button>
+                    <div className="w-full max-w-md bg-white/10 h-2 rounded-full overflow-hidden mb-4 border border-white/10">
+                        <div className="h-full bg-teal-400 w-full animate-splash-loader origin-left" style={{ animationDuration: '5000ms' }} />
+                    </div>
+                    <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest animate-pulse">
+                        Entering the Wisdom Path...
+                    </span>
                 </div>
             )}
 
