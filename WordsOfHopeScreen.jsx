@@ -23,6 +23,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const [level, setLevel] = useState(1); // Track current level/wave
     const [difficulty, setDifficulty] = useState('NORMAL'); // EASY, NORMAL, HARD
     const [localPaused, setLocalPaused] = useState(false); // Local pause state
+    const [tipsRemaining, setTipsRemaining] = useState(2); // Limited tips per level
 
     // Refs for Game Loop (Prevents stale closures)
     const scoreRef = useRef(0);
@@ -101,7 +102,9 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         setWordHistory([]);
         setBaseSpeed(initialSpeed); // Start at base difficulty
         setIsHistoryOpen(false);
+        setExplanationMode(false);
         setLevel(1);
+        setTipsRemaining(2); // Reset tips
 
         audioManager.playPop();
         if (audioManager) audioManager.startAmbient('park');
@@ -283,6 +286,9 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     };
 
     const processCollision = (item) => {
+        // Auto-disable tip once a word is caught/missed
+        setExplanationMode(false);
+
         const q = shuffledQuestions.find(sq => sq.id === item.questionId);
         if (!q) return;
 
@@ -318,6 +324,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     setBaseSpeed(s => Math.min(0.2, s + 0.02));
                     return nextLevel;
                 });
+                setTipsRemaining(prev => prev + 1); // Reward a tip
                 audioManager.playInvestigate(); 
             }
 
@@ -498,14 +505,25 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     {/* Explanation Mode Toggle */}
                     {gameState === 'PLAYING' && (
                         <button
-                            onClick={() => setExplanationMode(!explanationMode)}
-                            className={`px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 border ${explanationMode
-                                ? 'bg-teal-500 border-teal-400 text-white'
-                                : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
+                            onClick={() => {
+                                if (explanationMode) {
+                                    setExplanationMode(false);
+                                } else if (tipsRemaining > 0) {
+                                    setExplanationMode(true);
+                                    setTipsRemaining(prev => prev - 1);
+                                    audioManager.playPop();
+                                }
+                            }}
+                            disabled={!explanationMode && tipsRemaining === 0}
+                            className={`px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${explanationMode
+                                ? 'bg-teal-500 border-teal-400 text-white hover:scale-105 active:scale-95 border'
+                                : tipsRemaining > 0
+                                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 active:scale-95 border'
+                                    : 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed border'
                                 }`}
-                            title="Show explanations on words"
+                            title={tipsRemaining > 0 ? "Use a tip to reveal the answer" : "Out of tips for now"}
                         >
-                            💡 Tips
+                            💡 Tips ({tipsRemaining})
                         </button>
                     )}
 
