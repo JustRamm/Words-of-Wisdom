@@ -219,8 +219,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                 speed: baseSpeed,
                 text: q.correct,
                 isCorrect: true,
-                questionId: q.id,
-                trailColor: 'rgba(45, 212, 191, 0.3)' // Teal trail for correct
+                questionId: q.id
             },
             {
                 id: `stigma-${q.id}-${Date.now()}`,
@@ -229,8 +228,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                 speed: baseSpeed,
                 text: q.stigma,
                 isCorrect: false,
-                questionId: q.id,
-                trailColor: 'rgba(239, 68, 68, 0.3)' // Red trail for incorrect
+                questionId: q.id
             }
         ];
 
@@ -520,8 +518,6 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                                         textAlign: 'center',
                                         backdropFilter: 'blur(12px)',
                                         WebkitBackdropFilter: 'blur(12px)',
-                                        // Visual trail effect
-                                        boxShadow: `0 0 30px ${item.trailColor}, 0 10px 40px ${item.trailColor}`
                                     }}
                                 >
                                     <span className="text-[10px] md:text-sm font-black leading-tight uppercase tracking-wider">{item.text}</span>
