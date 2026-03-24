@@ -18,7 +18,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const [maxStreak, setMaxStreak] = useState(0); // Best streak this session
     const [explanationMode, setExplanationMode] = useState(false); // Toggle for showing explanations
     const [wordHistory, setWordHistory] = useState([]); // Track all word pairs encountered
-    const [baseSpeed, setBaseSpeed] = useState(0.12); // Progressive difficulty - increases with score
+    const [baseSpeed, setBaseSpeed] = useState(0.05); // Progressive difficulty - increases with score
     const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Glossary panel toggle
 
     // Refs for Game Loop (Prevents stale closures)
@@ -71,12 +71,12 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         setIsAlertVisible(false);
         isProcessingSetRef.current = false;
         hasInteractionRef.current = false;
-        spawnCooldownRef.current = 1000; // Initial delay
+        spawnCooldownRef.current = 6000; // Initial delay
 
         // Reset new enhanced features
         setStreak(0);
         setWordHistory([]);
-        setBaseSpeed(0.12); // Start at base difficulty
+        setBaseSpeed(0.05); // Start at base difficulty
         setIsHistoryOpen(false);
 
         audioManager.playPop();
@@ -235,7 +235,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         setFallingItems([...fallingItemsRef.current]);
 
         // Cooldown between sets - User requested 1-2 seconds after appearance
-        spawnCooldownRef.current = 2500;
+        spawnCooldownRef.current = 10000;
     };
 
     const processCollision = (item) => {
@@ -264,7 +264,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             });
 
             // Progressive difficulty - increase speed slightly with each correct catch
-            setBaseSpeed(prev => Math.min(0.25, prev + 0.01)); // Cap at 0.25 for playability
+            setBaseSpeed(prev => Math.min(0.12, prev + 0.01)); // Cap at 0.12 for playability
 
             audioManager.playDing();
             audioManager.playCoachTip();
