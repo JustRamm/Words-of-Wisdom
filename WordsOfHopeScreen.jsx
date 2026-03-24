@@ -3,7 +3,7 @@ import { TERMINOLOGY_DATA } from './terminologyData';
 
 const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGender = 'guy' }) => {
     // Game Flow States
-    const [gameState, setGameState] = useState('INTRO'); // INTRO, PLAYING, RESULTS, GAME_OVER, TRANSITIONING
+    const [gameState, setGameState] = useState('INTRO'); // INTRO, TUTORIAL, PLAYING, RESULTS, GAME_OVER, TRANSITIONING
     const [score, setScore] = useState(0);
     const [mistakes, setMistakes] = useState(0);
     const [harmony, setHarmony] = useState(50); // 0 (Gloomy) to 100 (Radiant)
@@ -53,7 +53,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         // SPLASH SCREEN AUTO-TRANSITION
         if (gameState === 'INTRO') {
             const timer = setTimeout(() => {
-                startGame();
+                setGameState('TUTORIAL');
             }, 5000);
             return () => clearTimeout(timer);
         }
@@ -497,6 +497,65 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest animate-pulse">
                         Entering the Wisdom Path...
                     </span>
+                </div>
+            )}
+
+            {gameState === 'TUTORIAL' && (
+                <div className="relative z-10 max-w-2xl w-full p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-tutorial">
+                    <div className="w-24 h-24 bg-teal-500/20 backdrop-blur-xl rounded-2xl mb-8 flex items-center justify-center border border-teal-400/30">
+                        <img src="/stickman_assets/hope_stickman.svg" alt="Tutor" className="w-16 h-16 animate-bounce-subtle" />
+                    </div>
+
+                    <h2 className="text-3xl md:text-5xl font-black text-white mb-8 uppercase tracking-tighter">Your Mission</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 w-full text-left">
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center font-black text-white">1</div>
+                                <span className="text-teal-400 font-bold uppercase tracking-widest text-[10px]">Movement</span>
+                            </div>
+                            <p className="text-slate-300 text-sm leading-relaxed">
+                                Move your cursor or touch to slide your character left and right.
+                            </p>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center font-black text-white">2</div>
+                                <span className="text-orange-400 font-bold uppercase tracking-widest text-[10px]">Objective</span>
+                            </div>
+                            <p className="text-slate-300 text-sm leading-relaxed">
+                                Catch the <span className="text-white font-bold underline decoration-teal-500">Seeds of Hope</span>. Let the harmful words pass.
+                            </p>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center font-black text-white">3</div>
+                                <span className="text-red-400 font-bold uppercase tracking-widest text-[10px]">Warning</span>
+                            </div>
+                            <p className="text-slate-300 text-sm leading-relaxed">
+                                You have 3 lives. Missing a Seed of Hope or catching a harmful word will cost a life.
+                            </p>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-black text-white">4</div>
+                                <span className="text-white/60 font-bold uppercase tracking-widest text-[10px]">Victory</span>
+                            </div>
+                            <p className="text-slate-300 text-sm leading-relaxed">
+                                Collect 4 Seeds of Hope to master the path and complete the lesson.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={startGame}
+                        className="px-12 py-5 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest text-lg shadow-2xl hover:bg-teal-400 transition-all hover:-translate-y-1 active:scale-95 border-b-4 border-teal-700"
+                    >
+                        Start Your Path
+                    </button>
                 </div>
             )}
 
