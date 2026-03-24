@@ -519,26 +519,47 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                         </button>
                     )}
 
-                    <button
-                        onClick={onExit}
-                        className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
-                    >
-                        Exit Path
-                    </button>
+                    {/* Back Button for Menus */}
+                    {['LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
+                        <button
+                            onClick={() => {
+                                audioManager.playPop();
+                                if (gameState === 'TUTORIAL') setGameState('LEVEL_SELECT');
+                                else onExit();
+                            }}
+                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                        >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                            Back
+                        </button>
+                    )}
 
-                    <button
-                        onClick={togglePause}
-                        className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white p-2 rounded-full transition-all hover:scale-105 active:scale-95"
-                        title="Pause Game (P)"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            {localPaused ?
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                :
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            }
-                        </svg>
-                    </button>
+                    {/* Exit Button for actual game screens */}
+                    {!['INTRO', 'LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
+                        <button
+                            onClick={onExit}
+                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                        >
+                            Exit Path
+                        </button>
+                    )}
+
+                    {/* Pause Button - Gameplay only */}
+                    {['PLAYING', 'RESULTS', 'GAME_OVER'].includes(gameState) && (
+                        <button
+                            onClick={togglePause}
+                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white p-2 rounded-full transition-all hover:scale-105 active:scale-95"
+                            title="Pause Game (P)"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                {localPaused ?
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    :
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                }
+                            </svg>
+                        </button>
+                    )}
                 </div>
             </div>
 

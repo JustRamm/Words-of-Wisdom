@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Circular Background - Filled with Solid White -->
+  <circle cx="256" cy="256" r="240" fill="#ffffff" stroke="#0d9488" stroke-width="20"/>
+  
+  <!-- Minimal Stickman (The Helper) -->
+  <circle cx="256" cy="180" r="45" stroke="#0f172a" stroke-width="24" fill="none"/>
+  <path d="M256,225 L256,380" stroke="#0f172a" stroke-width="24" stroke-linecap="round"/>
+  
+  <!-- Arms reaching out (Welcoming/Hugging pose) -->
+  <path d="M180,280 Q256,320 332,280" stroke="#0f172a" stroke-width="24" stroke-linecap="round" fill="none"/>
+  
+  <!-- Legs -->
+  <path d="M256,380 L200,480" stroke="#0f172a" stroke-width="24" stroke-linecap="round"/>
+  <path d="M256,380 L312,480" stroke="#0f172a" stroke-width="24" stroke-linecap="round"/>
+
+  <!-- Helping Hand Accent (Teal Heart/Star) -->
+  <path d="M350,150 L360,130 L380,130 L390,150 L370,170 Z" fill="#0d9488" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2s" repeatCount="indefinite"/>
+  </path>
+</svg>
