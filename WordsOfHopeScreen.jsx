@@ -313,15 +313,12 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                 return newStreak;
             });
 
-            // Progressive difficulty - increase speed slightly with each correct catch
-            setBaseSpeed(prev => Math.min(0.12, prev + 0.01)); // Cap at 0.12 for playability
-
             // LEVEL UP CHECK: Every 4 seeds
             if (scoreRef.current % 4 === 0) {
                 setLevel(prev => {
                     const nextLevel = prev + 1;
-                    // Increase speed jump for the next level
-                    setBaseSpeed(s => Math.min(0.2, s + 0.02));
+                    // Strict speed jump per level, no gradual build up
+                    setBaseSpeed(currentSpeed => currentSpeed + 0.035);
                     return nextLevel;
                 });
                 setTipsRemaining(prev => prev + 1); // Reward a tip
