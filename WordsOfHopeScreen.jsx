@@ -3,7 +3,7 @@ import { TERMINOLOGY_DATA } from './terminologyData';
 
 const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGender = 'guy' }) => {
     // Game Flow States
-    const [gameState, setGameState] = useState('INTRO'); // INTRO, TUTORIAL, PLAYING, RESULTS, GAME_OVER, TRANSITIONING
+    const [gameState, setGameState] = useState('INTRO'); // INTRO, LEVEL_SELECT, TUTORIAL, PLAYING, RESULTS, GAME_OVER, TRANSITIONING
     const [score, setScore] = useState(0);
     const [mistakes, setMistakes] = useState(0);
     const [harmony, setHarmony] = useState(50); // 0 (Gloomy) to 100 (Radiant)
@@ -20,6 +20,8 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const [wordHistory, setWordHistory] = useState([]); // Track all word pairs encountered
     const [baseSpeed, setBaseSpeed] = useState(0.05); // Progressive difficulty - increases with score
     const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Glossary panel toggle
+    const [level, setLevel] = useState(1); // Track current level/wave
+    const [difficulty, setDifficulty] = useState('NORMAL'); // EASY, NORMAL, HARD
 
     // Refs for Game Loop (Prevents stale closures)
     const scoreRef = useRef(0);
@@ -60,13 +62,18 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         // SPLASH SCREEN AUTO-TRANSITION
         if (gameState === 'INTRO') {
             const timer = setTimeout(() => {
-                setGameState('TUTORIAL');
+                setGameState('LEVEL_SELECT');
             }, 5000);
             return () => clearTimeout(timer);
         }
     }, [gameState]);
 
     const startGame = () => {
+        // Set dynamic parameters based on difficulty
+        let initialSpeed = 0.05;
+        if (difficulty === 'EASY') initialSpeed = 0.035;
+        if (difficulty === 'HARD') initialSpeed = 0.08;
+
         // Shuffle again for a fresh start each time
         const reshuffled = [...TERMINOLOGY_DATA.questions].sort(() => Math.random() - 0.5);
         setShuffledQuestions(reshuffled);
@@ -91,8 +98,9 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         // Reset new enhanced features
         setStreak(0);
         setWordHistory([]);
-        setBaseSpeed(0.05); // Start at base difficulty
+        setBaseSpeed(initialSpeed); // Start at base difficulty
         setIsHistoryOpen(false);
+        setLevel(1);
 
         audioManager.playPop();
         if (audioManager) audioManager.startAmbient('park');
@@ -279,6 +287,17 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             // Progressive difficulty - increase speed slightly with each correct catch
             setBaseSpeed(prev => Math.min(0.12, prev + 0.01)); // Cap at 0.12 for playability
 
+            // LEVEL UP CHECK: Every 4 seeds
+            if (scoreRef.current % 4 === 0) {
+                setLevel(prev => {
+                    const nextLevel = prev + 1;
+                    // Increase speed jump for the next level
+                    setBaseSpeed(s => Math.min(0.2, s + 0.02));
+                    return nextLevel;
+                });
+                audioManager.playInvestigate(); 
+            }
+
             audioManager.playDing();
             audioManager.playCoachTip();
             setExplanation({
@@ -302,8 +321,8 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             applyMistake();
         }
 
-        // Win state check
-        if (scoreRef.current >= 4) {
+        // Win state check - Final win at higher score (e.g. 12 seeds or all questions)
+        if (scoreRef.current >= 12) {
             triggerEndGame('RESULTS');
         }
     };
@@ -312,7 +331,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         if (gameState !== 'PLAYING') return;
         setGameState('TRANSITIONING');
         setTimeout(() => {
-            if (scoreRef.current >= 4) {
+            if (scoreRef.current >= 12) {
                 setGameState('RESULTS');
             } else {
                 setGameState('GAME_OVER');
@@ -449,8 +468,8 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     )}
 
                     <div className="flex flex-col items-end">
-                        <span className="text-[8px] font-black text-teal-400 uppercase tracking-widest leading-none mb-1">Target: 4 Seeds</span>
-                        <span className="text-white font-black text-xl leading-none">{score}<span className="text-white/30 text-sm font-medium ml-1">/ 4</span></span>
+                        <span className="text-[8px] font-black text-teal-400 uppercase tracking-widest leading-none mb-1">Level {level} (Target {level * 4})</span>
+                        <span className="text-white font-black text-xl leading-none">{score}<span className="text-white/30 text-sm font-medium ml-1">/ 12</span></span>
                     </div>
 
                     {/* Explanation Mode Toggle */}
@@ -486,6 +505,55 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                 </div>
             </div>
 
+            {gameState === 'LEVEL_SELECT' && (
+                <div className="relative z-10 max-w-4xl w-full p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-level-select">
+                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">Choose Your Path</h2>
+                    <p className="text-teal-200 text-lg font-bold mb-12 uppercase tracking-widest opacity-70">Adjust the intensity of your learning journey</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+                        {/* Easy Mode */}
+                        <div 
+                            onClick={() => { setDifficulty('EASY'); setGameState('TUTORIAL'); audioManager.playPop(); }}
+                            className="bg-white/5 border-2 border-white/10 hover:border-teal-400 p-8 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
+                        >
+                            <div className="w-20 h-20 bg-teal-400/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-teal-400/40 transition-colors">
+                                <span className="text-4xl text-teal-400">🍃</span>
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-2 uppercase">Breeze</h3>
+                            <p className="text-slate-400 text-sm font-medium leading-relaxed">Slower words. Focused on learning the terminology at your own pace.</p>
+                            <div className="mt-8 px-6 py-2 bg-white/10 rounded-full text-[10px] font-black text-teal-400 uppercase tracking-widest">Focus: Learning</div>
+                        </div>
+
+                        {/* Normal Mode */}
+                        <div 
+                            onClick={() => { setDifficulty('NORMAL'); setGameState('TUTORIAL'); audioManager.playPop(); }}
+                            className="bg-white/10 border-2 border-teal-500 p-10 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-110 active:scale-95 cursor-pointer flex flex-col items-center group shadow-4xl relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 px-4 py-1 bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest rounded-bl-xl shadow-lg">Recommended</div>
+                            <div className="w-24 h-24 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                                <span className="text-5xl text-white">🌿</span>
+                            </div>
+                            <h3 className="text-3xl font-black text-white mb-2 uppercase">Mist</h3>
+                            <p className="text-slate-300 text-sm font-medium leading-relaxed">Standard speed. Balanced challenge for terminology mastery.</p>
+                            <div className="mt-8 px-8 py-3 bg-teal-500 rounded-full text-[10px] font-black text-white uppercase tracking-widest shadow-xl">Focus: Mastery</div>
+                        </div>
+
+                        {/* Hard Mode */}
+                        <div 
+                            onClick={() => { setDifficulty('HARD'); setGameState('TUTORIAL'); audioManager.playPop(); }}
+                            className="bg-white/5 border-2 border-white/10 hover:border-orange-500 p-8 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
+                        >
+                            <div className="w-20 h-20 bg-orange-500/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-orange-500/40 transition-colors">
+                                <span className="text-4xl text-orange-400">⛈️</span>
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-2 uppercase">Storm</h3>
+                            <p className="text-slate-400 text-sm font-medium leading-relaxed">Rapid words. Test your reflexes and quick thinking for higher stakes.</p>
+                            <div className="mt-8 px-6 py-2 bg-white/10 rounded-full text-[10px] font-black text-orange-400 uppercase tracking-widest">Focus: Reflexes</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+ 
             {gameState === 'INTRO' && (
                 <div className="relative z-10 max-w-2xl w-full p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-hero">
                     <div className="w-32 h-32 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-12 flex items-center justify-center border border-white/20 shadow-2xl rotate-3">
@@ -769,7 +837,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     <div className="flex gap-6 mb-8">
                         <div className="flex flex-col items-center">
                             <p className="text-white/50 text-xs font-black uppercase tracking-widest">Progress</p>
-                            <p className="text-white text-2xl font-black">{score}/4</p>
+                            <p className="text-white text-2xl font-black">{score}/12</p>
                         </div>
                         {maxStreak > 0 && (
                             <div className="flex flex-col items-center">
@@ -794,7 +862,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     <div className="flex gap-6 mb-4">
                         <div className="flex flex-col items-center">
                             <p className="text-teal-200 text-sm font-bold uppercase tracking-widest">Final Score</p>
-                            <p className="text-white text-3xl font-black">{score}/4</p>
+                            <p className="text-white text-3xl font-black">{score}/12</p>
                         </div>
                         {maxStreak > 0 && (
                             <div className="flex flex-col items-center">
