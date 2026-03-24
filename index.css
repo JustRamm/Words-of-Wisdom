@@ -1,0 +1,642 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  /* Soft slate white */
+  --foreground: #1e293b;
+  /* Deep slate for text */
+  --primary: #0d9488;
+  /* Teal for growth/life */
+  --accent: #f97316;
+  /* Orange for energy/awareness */
+  --card-bg: #ffffff;
+  --border: #e2e8f0;
+
+  /* Tailwind 4 Theme Mappings */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Updated Full-Screen Aesthetic */
+.game-container {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  overflow: hidden;
+  animation: fadeIn 0.8s ease-out;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  /* Dynamic Viewport Height for mobile/Mac Safari */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #000;
+}
+
+/* Global Safari Backdrop Filter Fix */
+[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: blur(var(--tw-backdrop-blur));
+  backdrop-filter: blur(var(--tw-backdrop-blur));
+}
+
+/* Responsiveness & Mobile HUD */
+
+/* Base ergonomics for touch */
+button,
+input {
+  min-height: 44px;
+  /* Standard Apple touch target */
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(-10vw);
+  }
+
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+@keyframes bird-fly-1 {
+  0% {
+    transform: translate(-10vw, 0);
+  }
+
+  50% {
+    transform: translate(50vw, -20px);
+  }
+
+  100% {
+    transform: translate(110vw, 0);
+  }
+}
+
+@keyframes bird-fly-2 {
+  0% {
+    transform: translate(-20vw, 10px);
+  }
+
+  50% {
+    transform: translate(40vw, 30px);
+  }
+
+  100% {
+    transform: translate(120vw, 10px);
+  }
+}
+
+@keyframes bird-fly-3 {
+  0% {
+    transform: translate(-15vw, -10px);
+  }
+
+  50% {
+    transform: translate(60vw, 15px);
+  }
+
+  100% {
+    transform: translate(115vw, -10px);
+  }
+}
+
+@keyframes float-particle {
+
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  50% {
+    transform: translate(100px, -100px) rotate(180deg);
+  }
+
+  75% {
+    opacity: 1;
+  }
+}
+
+.animate-bird-fly-1 {
+  animation: bird-fly-1 15s linear infinite;
+}
+
+.animate-bird-fly-2 {
+  animation: bird-fly-2 18s linear infinite;
+}
+
+.animate-bird-fly-3 {
+  animation: bird-fly-3 12s linear infinite;
+}
+
+@keyframes stickman-walk {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  25% {
+    transform: translateY(-15px) rotate(8deg);
+  }
+
+  50% {
+    transform: translateY(-5px) rotate(0deg);
+  }
+
+  75% {
+    transform: translateY(-15px) rotate(-8deg);
+  }
+}
+
+
+@keyframes stickman-jump {
+  0% {
+    transform: translateY(0) scaleY(1);
+  }
+
+  40% {
+    transform: translateY(-100px) scaleY(0.9);
+  }
+
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+/* Updated sway to be anchored at the bottom to prevent "flying" */
+@keyframes idle-sway {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+    transform-origin: bottom center;
+  }
+
+  50% {
+    transform: rotate(1deg);
+    transform-origin: bottom center;
+  }
+}
+
+.animate-idle-sway {
+  /* Using a transform-origin to ensure feet stay planted */
+  animation: idle-sway 4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+.animate-stickman-walk {
+  animation: stickman-walk 0.6s steps(12) infinite;
+  /* Steps gives it a more 'drawn' feel */
+}
+
+
+.animate-stickman-jump {
+  animation: stickman-jump 0.5s ease-out forwards;
+}
+
+@keyframes stickman-shiver {
+  0% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+
+  75% {
+    transform: translateX(2px) rotate(1deg);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-stickman-shiver {
+  animation: stickman-shiver 0.1s linear infinite;
+}
+
+@keyframes rain-drop {
+  0% {
+    transform: translateY(0) translateX(0) rotate(15deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.6;
+  }
+
+  90% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateY(110vh) translateX(-300px) rotate(15deg);
+    opacity: 0;
+  }
+}
+
+.animate-rain-drop {
+  animation: rain-drop 0.8s linear infinite;
+}
+
+
+/* Wallet Styles - Brighter theme */
+/* RESOURCE WALLET STYLES */
+.resource-wallet {
+  position: absolute;
+  top: 0;
+  right: -450px;
+  width: 420px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  padding: 2rem;
+  transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 150;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.resource-wallet.open {
+  right: 0;
+}
+
+.resource-card {
+  background: white;
+  border: 1px solid #cbd5e1;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.resource-card:hover {
+  border-color: #14b8a6;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.resource-card.selected {
+  border-color: #0d9488 !important;
+  background: #f0fdfa !important;
+  box-shadow: 0 0 0 2px #0d9488 !important;
+}
+
+.camera-viewport {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center 70%;
+  will-change: transform;
+}
+
+/* Additional Quiz Game Animations */
+.animate-float-slow {
+  animation: float 20s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float 15s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float 10s ease-in-out infinite;
+}
+
+@keyframes bounce-subtle {
+
+  0%,
+  100% {
+    transform: translateY(-2%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite;
+}
+
+@keyframes pulse-slow {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: .7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes attention-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.4);
+  }
+
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 15px rgba(20, 184, 166, 0);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+  }
+}
+
+@keyframes attention-pulse-indigo {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+@keyframes shine-sweep {
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes wiggle {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-3deg);
+  }
+
+  75% {
+    transform: rotate(3deg);
+  }
+}
+
+.animate-attention-teal {
+  animation: attention-pulse 2s infinite;
+}
+
+.animate-attention-indigo {
+  animation: attention-pulse-indigo 2.5s infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: rotate(30deg);
+  animation: shine-sweep 3s infinite;
+}
+
+/* Training Module Refinements */
+.training-module-card {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.training-module-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.indicator-pulse {
+  position: relative;
+}
+
+.indicator-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  opacity: 0.5;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes breathing {
+
+  0%,
+  100% {
+    transform: scaleY(1);
+    transform-origin: bottom center;
+  }
+
+  50% {
+    transform: scaleY(1.03) scaleX(1.01);
+    transform-origin: bottom center;
+  }
+}
+
+.animate-breathing {
+  animation: breathing 4s ease-in-out infinite;
+}
+
+@keyframes progress-shrink {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
+.animate-progress-shrink {
+  animation: progress-shrink linear forwards;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.8) translateY(10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) translateX(-50%);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-100px) translateX(-50%);
+    opacity: 0;
+  }
+}
+
+.animate-pop-in {
+  animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float-up {
+  animation: floatUp 1.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

@@ -1,0 +1,21 @@
+<svg viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+  <!-- Full Head -->
+  <path d="M50 42 c-12 0 -20 -8 -20 -20 s8 -20 20 -20 s20 8 20 20 s-8 20 -20 20 Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+  <!-- Body (Hunched) -->
+  <path d="M50 42 c-5 15 -10 30 -5 55" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+  
+  <!-- Hands on Head (Distress) - Clearly defined hands -->
+  <!-- Left Arm -->
+  <path d="M35 55 c-10 -10 -15 -25 -5 -35" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+  <circle cx="30" cy="20" r="3" fill="currentColor" /> <!-- Left Hand clutching head -->
+  <!-- Right Arm -->
+  <path d="M65 55 c10 -10 15 -25 5 -35" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+  <circle cx="70" cy="20" r="3" fill="currentColor" /> <!-- Right Hand clutching head -->
+  
+  <!-- Shaky Legs -->
+  <path d="M45 95 l-18 35" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+  <path d="M45 95 l12 35" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+  
+  <!-- Shiver/Stress Lines -->
+  <path d="M25 45 l-8 0 M75 45 l8 0 M30 80 l-6 4 M70 80 l6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.6" />
+</svg>
