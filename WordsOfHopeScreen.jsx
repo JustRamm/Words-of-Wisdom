@@ -24,6 +24,8 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const [difficulty, setDifficulty] = useState('NORMAL'); // EASY, NORMAL, HARD
     const [localPaused, setLocalPaused] = useState(false); // Local pause state
     const [tipsRemaining, setTipsRemaining] = useState(2); // Limited tips per level
+    const [isSpeedBoosted, setIsSpeedBoosted] = useState(false);
+    const isFirstSpawnRef = useRef(true);
     const [unlockedLevel, setUnlockedLevel] = useState(() => {
         const saved = localStorage.getItem('words_of_hope_unlocked_level');
         return saved ? parseInt(saved) : 1; // 1: Breeze, 2: Mist, 3: Storm
@@ -47,6 +49,9 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const hasInteractionRef = useRef(false);
     const requestRef = useRef();
     const pausedRef = useRef(false);
+    const speedBoostRef = useRef(false);
+    const baseSpeedRef = useRef(0.05);
+    const lastSpawnedYRef = useRef(100);
 
     // Physics State in Ref for synchronous updates
     const fallingItemsRef = useRef([]);
@@ -83,9 +88,9 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     }, [gameState]);
 
     const startGame = () => {
-        // Mobile speed adjustment (1.5x for smaller screens)
+        // Mobile speed adjustment (2.0x for smaller screens to reduce delay)
         const isMobile = window.innerWidth < 768;
-        const speedMultiplier = isMobile ? 1.5 : 1;
+        const speedMultiplier = isMobile ? 2.0 : 1;
 
         // Set dynamic parameters based on difficulty
         let initialSpeed = 0.05;
@@ -119,13 +124,21 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         setStreak(0);
         setWordHistory([]);
         setBaseSpeed(initialSpeed); // Start at base difficulty
+        baseSpeedRef.current = initialSpeed;
         setIsHistoryOpen(false);
         setExplanationMode(false);
         setLevel(1);
         setTipsRemaining(2); // Reset tips
+        isFirstSpawnRef.current = true; // Reset spawn position for new game
 
         audioManager.playPop();
         if (audioManager) audioManager.startAmbient('park');
+
+        // PRE-FILL SCREEN FOR UNIFORM MOMENTUM
+        spawnSet(45);  // Visible
+        spawnSet(5);   // Mid-way
+        spawnSet(-35); // Entering
+        spawnSet(-75); // Queued (Eliminates delay for 4th set)
     };
 
     // Sidebar auto-hide logic
@@ -173,9 +186,23 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
                 togglePause();
             }
+            if (e.key === 'Shift' || e.key === ' ') {
+                setIsSpeedBoosted(true);
+                speedBoostRef.current = true;
+            }
+        };
+        const handleKeyUp = (e) => {
+            if (e.key === 'Shift' || e.key === ' ') {
+                setIsSpeedBoosted(false);
+                speedBoostRef.current = false;
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
     }, [gameState]);
 
     // Handle Mouse/Touch Movement
@@ -215,15 +242,18 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         const nextItems = [];
         let collisionOccurred = false;
         const handledQuestionIds = new Set();
+        
+        // Manual speed boost factor (Reads from ref to avoid stale closures in the loop)
+        const effectiveSpeed = speedBoostRef.current ? baseSpeedRef.current * 3 : baseSpeedRef.current;
+ 
+        // Track the vertical displacement of the last spawned item (persists even if caught)
+        lastSpawnedYRef.current += effectiveSpeed;
 
         for (const item of currentItems) {
-            // If we already handled this question in this frame (collision or miss), skip
-            if (handledQuestionIds.has(item.questionId)) continue;
-
-            // Apply gravity/speed
-            const newItem = { ...item, y: item.y + item.speed };
-
-            // Collision Check
+            // ... movement and collision ...
+            const newItem = { ...item, y: item.y + effectiveSpeed };
+            
+            // ... Collision Check ...
             const distanceX = Math.abs(newItem.x - playerRef.current);
             const isYAligned = newItem.y > 75 && newItem.y < 95;
 
@@ -231,34 +261,29 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                 collisionOccurred = true;
                 processCollision(newItem);
                 handledQuestionIds.add(item.questionId);
-                continue; // Item correctly processed, don't add to nextItems
+                continue;
             }
 
-            // Off-screen Check (Missed)
+            // Off-screen Check
             if (newItem.y >= 105) {
-                if (item.isCorrect) {
-                    // Only the 'correct' item triggers a mistake if missed
-                    applyMistake();
-                }
+                if (item.isCorrect) applyMistake();
                 handledQuestionIds.add(item.questionId);
-                continue; // Item fell off, don't add to nextItems
+                continue;
             }
 
             nextItems.push(newItem);
         }
 
-        // Filter out any other items belonging to handled questions (e.g., the other half of the pair)
         fallingItemsRef.current = nextItems.filter(item => !handledQuestionIds.has(item.questionId));
         setFallingItems([...fallingItemsRef.current]);
 
-        // 2. Spawning Logic (Stream-based)
+        // 2. Spawning Logic (Uses dedicated reference to guarantee uniform 40% gaps)
         if (gameState === 'PLAYING' && currentIndexRef.current < shuffledQuestions.length) {
-            spawnCooldownRef.current -= 16;
-            if (spawnCooldownRef.current <= 0) {
-                spawnSet();
+            // Trigger next pair as soon as last one hits the threshold
+            if (lastSpawnedYRef.current > -5) {
+                spawnSet(-45);
             }
         } else if (gameState === 'PLAYING' && currentIndexRef.current >= shuffledQuestions.length && fallingItemsRef.current.length === 0) {
-            // Handle End of Game when all items are gone
             checkFinalOutcome();
         }
 
@@ -270,18 +295,20 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         return () => cancelAnimationFrame(requestRef.current);
     }, [gameState]);
 
-    const spawnSet = () => {
+    const spawnSet = (forcedY = null) => {
         if (currentIndexRef.current >= shuffledQuestions.length) return;
 
         const q = shuffledQuestions[currentIndexRef.current];
         currentIndexRef.current += 1;
         setCurrentIndex(currentIndexRef.current);
 
+        const spawnY = forcedY !== null ? forcedY : -20; // Use forced height or start off-screen
+        
         const items = [
             {
                 id: `correct-${q.id}-${Date.now()}`,
                 x: 25,
-                y: -15,
+                y: spawnY,
                 speed: baseSpeed,
                 text: q.correct,
                 isCorrect: true,
@@ -290,7 +317,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             {
                 id: `stigma-${q.id}-${Date.now()}`,
                 x: 75,
-                y: -15,
+                y: spawnY,
                 speed: baseSpeed,
                 text: q.stigma,
                 isCorrect: false,
@@ -305,9 +332,9 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
 
         fallingItemsRef.current = [...fallingItemsRef.current, ...items];
         setFallingItems([...fallingItemsRef.current]);
-
-        // Cooldown between sets - User requested 1-2 seconds after appearance
-        spawnCooldownRef.current = 10000;
+        
+        // Update the momentum reference to the latest spawn height
+        lastSpawnedYRef.current = spawnY;
     };
 
     const processCollision = (item) => {
@@ -343,9 +370,11 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                 setLevel(prev => {
                     const nextLevel = prev + 1;
                     const isMobile = window.innerWidth < 768;
-                    const speedMultiplier = isMobile ? 1.5 : 1;
+                    const speedMultiplier = isMobile ? 2.0 : 1;
                     // Strict speed jump per level, no gradual build up
-                    setBaseSpeed(currentSpeed => currentSpeed + (0.035 * speedMultiplier));
+                    const newSpeed = currentSpeed + (0.035 * speedMultiplier);
+                    setBaseSpeed(newSpeed);
+                    baseSpeedRef.current = newSpeed;
                     return nextLevel;
                 });
                 setTipsRemaining(prev => prev + 1); // Reward a tip
@@ -597,8 +626,8 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                             </button>
                         )}
 
-                        {/* Pause Button - Gameplay only */}
-                        {['PLAYING', 'RESULTS', 'GAME_OVER'].includes(gameState) && (
+                        {/* Pause Button - Active Gameplay only */}
+                        {gameState === 'PLAYING' && (
                             <button
                                 onClick={togglePause}
                                 className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white p-2 rounded-full transition-all hover:scale-105 active:scale-95"
@@ -730,20 +759,28 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
  
             {gameState === 'INTRO' && (
                 <div className="relative z-10 max-w-2xl w-full p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-hero">
-                    <div className="w-32 h-32 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-12 flex items-center justify-center border border-white/20 shadow-2xl rotate-3">
-                        <img src="/stickman_assets/hope_stickman.svg" alt="Hope" className="w-20 h-20 animate-pulse" />
+                    {/* Organization Branding */}
+                    <div className="flex flex-col items-center mb-16 animate-scale-in">
+                        <div className="w-24 h-24 bg-white p-2 rounded-3xl shadow-4xl mb-6 overflow-hidden border-2 border-white/20 backdrop-blur-md">
+                            <img src="/ME.jpeg" alt="Mind Empowered" className="w-full h-full object-contain" />
+                        </div>
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-2 leading-none">Presented By</span>
+                        <h1 className="text-xl font-black text-white uppercase tracking-widest">Mind Empowered</h1>
                     </div>
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight uppercase tracking-tighter">
+
+                    <div className="w-24 h-24 bg-white/5 backdrop-blur-xl rounded-[2rem] mb-12 flex items-center justify-center border border-white/10 shadow-2xl -rotate-6">
+                        <img src="/stickman_assets/hope_stickman.svg" alt="Hope" className="w-16 h-16 animate-pulse" />
+                    </div>
+
+                    <h2 className="text-4xl md:text-7xl font-black text-white mb-6 leading-tight uppercase tracking-tighter">
                         Word <span className="text-teal-400">Wisdom.</span>
                     </h2>
-                    <p className="text-slate-300 text-lg md:text-xl font-medium mb-12 text-balance leading-relaxed">
-                        Identify the phrases of <span className="text-white font-bold underline decoration-teal-500 underline-offset-4">Hope</span> and let the <span className="text-slate-500 font-bold">Thorns of Stigma</span> fall.
-                        <br /><span className="text-teal-400 font-black text-sm uppercase tracking-widest mt-4 block">Goal: Collect 4 Seeds of Wisdom</span>
-                    </p>
-                    <div className="w-full max-w-md bg-white/10 h-2 rounded-full overflow-hidden mb-4 border border-white/10">
+                    
+                    <div className="w-full max-w-md bg-white/10 h-1.5 rounded-full overflow-hidden mb-6 border border-white/5">
                         <div className="h-full bg-teal-400 w-full animate-splash-loader origin-left" style={{ animationDuration: '5000ms' }} />
                     </div>
-                    <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest animate-pulse">
+                    
+                    <span className="text-[10px] font-black text-teal-400/60 uppercase tracking-[0.3em] animate-pulse">
                         Entering the Wisdom Path...
                     </span>
                 </div>
@@ -1013,69 +1050,92 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                         </div>
                     </div>
 
-                    {/* MOBILE HORIZONTAL JOYSTICK */}
+                    {/* MOBILE HORIZONTAL JOYSTICK & 2X BOOST */}
                     {isMobile && (
-                        <div className="absolute bottom-4 left-0 right-0 px-8 py-6 z-[200] flex flex-col items-center">
-                            <div 
-                                className="relative w-full max-w-[400px] h-20 bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden touch-none"
-                                onPointerDown={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const x = ((e.clientX - rect.left) / rect.width) * 100;
-                                    const clampedX = Math.max(5, Math.min(95, x));
-                                    setPlayerX(clampedX);
-                                    playerRef.current = clampedX;
+                        <>
+                            {/* 2X SPEED BOOST BUTTON (Floating bottom right for ergonomic two-thumb play) */}
+                            <button
+                                onPointerDown={() => {
+                                    setIsSpeedBoosted(true);
+                                    speedBoostRef.current = true;
                                 }}
-                                onPointerMove={(e) => {
-                                    if (e.buttons > 0) { // Pointer is pressed
+                                onPointerUp={() => {
+                                    setIsSpeedBoosted(false);
+                                    speedBoostRef.current = false;
+                                }}
+                                onPointerCancel={() => {
+                                    setIsSpeedBoosted(false);
+                                    speedBoostRef.current = false;
+                                }}
+                                className={`absolute bottom-40 right-6 w-14 h-14 rounded-full flex items-center justify-center transition-all border-2 z-[300] active:scale-90 shadow-2xl ${isSpeedBoosted 
+                                    ? 'bg-orange-500 border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.5)]' 
+                                    : 'bg-white/5 backdrop-blur-xl border-white/20 text-white/40'}`}
+                            >
+                                <span className={`text-lg font-black italic tracking-tighter ${isSpeedBoosted ? 'text-white scale-110' : 'text-white/40'}`}>2X</span>
+                            </button>
+
+                            <div className="absolute bottom-4 left-0 right-0 px-8 py-6 z-[200] flex flex-col items-center">
+                                <div 
+                                    className="relative w-full max-w-[400px] h-20 bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden touch-none"
+                                    onPointerDown={(e) => {
                                         const rect = e.currentTarget.getBoundingClientRect();
                                         const x = ((e.clientX - rect.left) / rect.width) * 100;
                                         const clampedX = Math.max(5, Math.min(95, x));
                                         setPlayerX(clampedX);
                                         playerRef.current = clampedX;
-                                    }
-                                }}
-                                onTouchMove={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const touch = e.touches[0];
-                                    const x = ((touch.clientX - rect.left) / rect.width) * 100;
-                                    const clampedX = Math.max(5, Math.min(95, x));
-                                    setPlayerX(clampedX);
-                                    playerRef.current = clampedX;
-                                }}
-                            >
-                                {/* Track Background Accent */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-teal-500/5 to-white/5 pointer-events-none" />
-                                
-                                {/* Dynamic Track Progress (Glow follows player) */}
-                                <div 
-                                    className="absolute inset-y-0 left-0 bg-teal-400/20 blur-xl pointer-events-none transition-all duration-300"
-                                    style={{ width: `${playerX}%` }}
-                                />
-
-                                {/* Center Guideline */}
-                                <div className="absolute inset-y-4 left-1/2 -translate-x-1/2 w-px bg-white/10" />
-                                
-                                {/* Thumb / Handle */}
-                                <div 
-                                    className="absolute w-20 h-14 bg-white/10 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl flex flex-col items-center justify-center transition-all duration-75 group active:scale-95"
-                                    style={{ 
-                                        left: `${playerX}%`, 
-                                        top: '50%',
-                                        transform: 'translate(-50%, -50%)' 
+                                    }}
+                                    onPointerMove={(e) => {
+                                        if (e.buttons > 0) { // Pointer is pressed
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                            const clampedX = Math.max(5, Math.min(95, x));
+                                            setPlayerX(clampedX);
+                                            playerRef.current = clampedX;
+                                        }
+                                    }}
+                                    onTouchMove={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const touch = e.touches[0];
+                                        const x = ((touch.clientX - rect.left) / rect.width) * 100;
+                                        const clampedX = Math.max(5, Math.min(95, x));
+                                        setPlayerX(clampedX);
+                                        playerRef.current = clampedX;
                                     }}
                                 >
-                                    {/* Teal Glow Pulse when Active */}
-                                    <div className="absolute inset-0 bg-teal-400/20 blur-md rounded-2xl opacity-0 group-active:opacity-100 transition-opacity" />
+                                    {/* Track Background Accent */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500/5 to-white/5 pointer-events-none" />
                                     
-                                    <div className="flex gap-1.5 z-10">
-                                        <div className="w-1 h-5 bg-white/40 rounded-full" />
-                                        <div className="w-1 h-5 bg-teal-400 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.5)]" />
-                                        <div className="w-1 h-5 bg-white/40 rounded-full" />
+                                    {/* Dynamic Track Progress (Glow follows player) */}
+                                    <div 
+                                        className="absolute inset-y-0 left-0 bg-teal-400/20 blur-xl pointer-events-none transition-all duration-300"
+                                        style={{ width: `${playerX}%` }}
+                                    />
+
+                                    {/* Center Guideline */}
+                                    <div className="absolute inset-y-4 left-1/2 -translate-x-1/2 w-px bg-white/10" />
+                                    
+                                    {/* Thumb / Handle */}
+                                    <div 
+                                        className="absolute w-20 h-14 bg-white/10 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl flex flex-col items-center justify-center transition-all duration-75 group active:scale-95"
+                                        style={{ 
+                                            left: `${playerX}%`, 
+                                            top: '50%',
+                                            transform: 'translate(-50%, -50%)' 
+                                        }}
+                                    >
+                                        {/* Teal Glow Pulse when Active */}
+                                        <div className="absolute inset-0 bg-teal-400/20 blur-md rounded-2xl opacity-0 group-active:opacity-100 transition-opacity" />
+                                        
+                                        <div className="flex gap-1.5 z-10">
+                                            <div className="w-1 h-5 bg-white/40 rounded-full" />
+                                            <div className="w-1 h-5 bg-teal-400 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.5)]" />
+                                            <div className="w-1 h-5 bg-white/40 rounded-full" />
+                                        </div>
+                                        <span className="text-[6px] font-black text-white/40 uppercase tracking-[0.2em] mt-1.5">Slide</span>
                                     </div>
-                                    <span className="text-[6px] font-black text-white/40 uppercase tracking-[0.2em] mt-1.5">Slide</span>
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
                 </>
             )}
