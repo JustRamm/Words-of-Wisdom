@@ -1,11 +1,41 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import WordsOfHopeScreen from './WordsOfHopeScreen';
+import PlayerRegistrationScreen from './PlayerRegistrationScreen';
+import GameBackground from './GameBackground';
 import { audioManager } from './audio';
 import './App.css';
 import './index.css';
 
-const App = () => {
-    // Initialize audio on first interact
+const SplashContent = () => (
+    <div className="relative z-10 flex flex-col items-center justify-center h-full animate-fade-in">
+        <div className="w-40 h-40 bg-white/5 backdrop-blur-3xl rounded-[3rem] mb-12 flex items-center justify-center border border-white/20 shadow-2xl -rotate-6">
+            <img src="/stickman_assets/logo.svg" alt="Hope" className="w-24 h-24 animate-pulse" />
+        </div>
+        <h2 className="text-6xl md:text-8xl font-black text-white mb-2 leading-none uppercase tracking-tighter drop-shadow-2xl">
+            Word <span className="text-teal-400">Wisdom.</span>
+        </h2>
+        <div className="h-1.5 w-full max-w-[300px] bg-white/10 rounded-full mt-8 overflow-hidden border border-white/5">
+            <div className="h-full bg-teal-400 w-full animate-splash-loader origin-left" style={{ animationDuration: '3000ms' }} />
+        </div>
+        <p className="text-white/20 font-black uppercase tracking-[0.5em] text-[10px] mt-12 animate-pulse">A Journey of Mind Empowered</p>
+    </div>
+);
+
+export default function App() {
+    const [screen, setScreen] = useState('SPLASH');
+    const [playerData, setPlayerData] = useState(null);
+
+    // Initial splash timer
+    useEffect(() => {
+        if (screen === 'SPLASH') {
+            const timer = setTimeout(() => {
+                setScreen('REGISTRATION');
+            }, 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [screen]);
+
+    // Initialize audio
     useEffect(() => {
         const initAudio = () => {
             audioManager.init();
@@ -16,22 +46,44 @@ const App = () => {
         document.addEventListener('touchstart', initAudio);
     }, []);
 
+    const handleRegistrationComplete = (data) => {
+        setPlayerData(data);
+        setScreen('GAME');
+        if (audioManager) audioManager.playPop();
+    };
+
     const handleExit = () => {
         if (confirm("Reset the path of wisdom?")) {
-            window.location.reload();
+            setScreen('SPLASH');
         }
     };
 
     return (
-        <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
-            <WordsOfHopeScreen 
-                audioManager={audioManager} 
-                onExit={handleExit} 
-                isPaused={false} 
-                playerGender="guy" 
-            />
+        <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+            {screen === 'SPLASH' && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+                    <GameBackground harmony={50} />
+                    <SplashContent />
+                </div>
+            )}
+
+            {screen === 'REGISTRATION' && (
+                <PlayerRegistrationScreen onComplete={handleRegistrationComplete} />
+            )}
+            
+            {screen === 'GAME' && (
+                <WordsOfHopeScreen 
+                    audioManager={audioManager} 
+                    onExit={handleExit} 
+                    isPaused={false} 
+                    playerGender="guy" 
+                    playerData={playerData}
+                    initialState="LEVEL_SELECT"
+                />
+            )}
         </div>
     );
-};
+}
 
-export default App;
+
+

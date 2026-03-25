@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman To The Rescue</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Capture Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgb(38, 64, 115) 0%, rgb(10, 10, 60) 100%);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .hills-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 35%;
+            z-index: 1;
+            opacity: 0.5;
+        }
+
+        .ground-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 12%;
+            background: linear-gradient(rgb(25, 41, 30) 0%, rgb(19, 32, 23) 100%);
+            z-index: 2;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 3rem;
+            box-shadow: 0 60px 120px -30px rgba(0, 0, 0, 0.8);
+            width: 94vw;
+            max-width: 1300px;
+            height: 85vh;
+            display: grid;
+            grid-template-columns: 42% 58%;
+            overflow: hidden;
+            /* Added to clip the left-side image corners */
+            z-index: 10;
+        }
+
+        .portrait-area {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .portrait-full {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.9;
+        }
+
+        .name-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 3rem 2.5rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.6) 50%, transparent 100%);
+        }
+
+        .qr-card {
+            background: white;
+            padding: 1.25rem;
+            border-radius: 2rem;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .download-btn {
+            position: fixed;
+            top: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 500;
+            background: rgba(20, 184, 166, 0.4);
+            color: white;
+            padding: 0.8rem 1.6rem;
+            border-radius: 9999px;
+            font-weight: 800;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .download-btn:hover { 
+            opacity: 1;
+        }
+        .download-btn:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+    </style>
+</head>
+
+<body id="slide-capture">
+
+    <!-- Game Environment Backdrop -->
+    <div class="hills-container">
+        <svg class="absolute bottom-0 w-full h-full" viewBox="0 0 1000 400" preserveAspectRatio="none">
+            <path d="M0,400 L0,300 L150,150 L350,280 L550,100 L800,320 L1000,200 L1000,400 Z"
+                style="fill: rgb(31, 33, 46);"></path>
+            <path d="M0,400 L0,350 L200,220 L450,340 L700,180 L1000,330 L1000,400 Z"
+                style="fill: rgb(37, 41, 62); opacity: 0.8;"></path>
+        </svg>
+    </div>
+    <div class="ground-layer"></div>
+
+    <!-- MAIN PRESENTATION PANEL -->
+    <div class="glass-panel">
+
+        <!-- LEFT: PORTRAIT SIDE -->
+        <div class="portrait-area">
+            <img src="./public/stickman_assets/1.jpg" alt="Abiram T Bijoy" class="portrait-full">
+            <div class="name-overlay">
+                <span class="text-[9px] font-black uppercase tracking-[0.8em] text-teal-400 mb-3 block">Lead
+                    Architect</span>
+                <h1 class="text-4xl md:text-[3.2rem] font-black text-white leading-none tracking-tighter whitespace-nowrap">
+                    Abiram T <span class="text-teal-400">Bijoy</span>
+                </h1>
+            </div>
+        </div>
+
+        <!-- RIGHT: CONTENT SIDE -->
+        <div class="flex flex-col p-14 justify-between items-start">
+
+            <!-- HEADER: LOGO ON SAME LINE AS TITLE -->
+            <div class="w-full flex justify-between items-center mb-8 pb-8 border-b border-white/5">
+                <div class="flex items-center gap-6">
+                    <div
+                        class="w-16 h-16 bg-white/5 backdrop-blur-3xl rounded-[20px] p-0.5 border border-white/10 flex items-center justify-center">
+                        <img src="./public/stickman_assets/logo.svg" alt="Stickman Logo"
+                            class="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(45,212,191,0.5)]">
+                    </div>
+                    <h3 class="text-white text-3xl md:text-3xl font-black uppercase tracking-tighter leading-none">
+                        Stickman To The Rescue</h3>
+                </div>
+                <!-- Organization Branding -->
+                <div class="w-14 h-14 bg-white p-1 rounded-2xl shadow-xl flex-shrink-0">
+                    <img src="./public/ME.jpeg" alt="Mind Empowered" class="w-full h-full object-contain rounded-xl">
+                </div>
+            </div>
+
+            <!-- MISSION CONTENT - REWRITTEN -->
+            <div class="flex flex-col items-start w-full my-8">
+                <div
+                    class="tag-pill bg-teal-500/10 border border-teal-500/20 px-4 py-1.5 rounded-full text-teal-400 text-[10px] font-black uppercase tracking-widest mb-6">
+                    Empowering Awareness</div>
+                <p class="text-[1.6rem] md:text-[1.8rem] text-white/50 leading-relaxed font-medium italic">
+                    "A game designed to <span class="text-white">educate people</span> and <span class="text-white">spread awareness</span> with respect
+                    to <span class="text-teal-400">suicide prevention.</span>"
+                </p>
+            </div>
+
+            <!-- FOOTER AREA (QR & DETAILS) -->
+            <div class="w-full flex items-end justify-between mt-auto">
+                <div class="flex flex-col items-start gap-4">
+                    <span class="text-[10px] font-black uppercase tracking-[0.6em] text-white/20">Portal Access</span>
+                    <div class="qr-card">
+                        <img src="./public/stickman_assets/Words_Of_Wisdom-1024.png" alt="Scan to Play"
+                            class="w-32 h-32 md:w-36 md:h-36 object-contain">
+                    </div>
+                </div>
+
+                <div class="text-right flex flex-col items-end">
+                    <span class="text-teal-400 font-black tracking-widest text-[9px] uppercase mb-1">Developer</span>
+                    <h4 class="text-white text-xl font-black uppercase tracking-tighter">Mind Empowered</h4>
+                    <div class="h-0.5 w-10 bg-white/20 mt-3 ml-auto"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Hidden Save Button -->
+    <button id="download-trigger" class="download-btn">Export Slide (PNG)</button>
+
+    <script>
+        document.getElementById('download-trigger').addEventListener('click', function () {
+            const btn = this;
+            const element = document.body;
+            btn.style.display = 'none';
+            htmlToImage.toPng(element, { quality: 1, backgroundColor: '#010410' })
+                .then(function (dataUrl) {
+                    const link = document.createElement('a');
+                    link.download = 'Stickman_Rescue_About_Me.png';
+                    link.href = dataUrl; link.click();
+                    btn.style.display = 'block';
+                }).catch(function (err) { btn.style.display = 'block'; });
+        });
+    </script>
+</body>
+
+</html>

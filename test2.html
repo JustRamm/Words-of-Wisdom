@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman To The Rescue - Spotlight</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Playfair+Display:ital,wght@1,900&display=swap"
+        rel="stylesheet" crossorigin="anonymous">
+    <!-- Capture Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <style>
+        :root {
+            --bg-top: #1e3a8a;
+            --bg-bottom: #0f172a;
+            --accent-teal: #2dd4bf;
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 1:1 SQUARE MASTER CONTAINER */
+        .post-canvas {
+            width: 1000px;
+            height: 1000px;
+            background: radial-gradient(circle at 70% 30%, #3b82f6 0%, #1d4ed8 40%, #1e3a8a 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.5);
+        }
+
+        /* BRIGHTER GLOW */
+        .sunway-glow {
+            position: absolute;
+            top: 10%;
+            right: -10%;
+            width: 900px;
+            height: 900px;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* GAME BACKGROUND (STATIC) */
+        .hills-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 35%;
+            z-index: 2;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .ground-base {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 8%;
+            background: linear-gradient(to top, #0f172a 0%, transparent 100%);
+            z-index: 3;
+        }
+
+        /* PORTRAIT SYSTEM */
+        .portrait-stack {
+            position: absolute;
+            top: 260px;
+            right: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            z-index: 30;
+        }
+
+        .portrait-wrapper {
+            position: relative;
+            width: 380px;
+            height: 480px;
+        }
+
+        .glass-frame-behind {
+            position: absolute;
+            inset: -12px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 60px;
+            z-index: 10;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-portrait {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+            z-index: 20;
+        }
+
+        .portrait-badge {
+            position: absolute;
+            top: 30px;
+            right: -20px;
+            background: var(--accent-teal);
+            color: #0f172a;
+            padding: 8px 24px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: 0 10px 25px rgba(45, 212, 191, 0.4);
+            z-index: 40;
+        }
+
+        /* STICKMAN ICON (SUBTLE BG) */
+        .bg-stickman {
+            position: absolute;
+            bottom: 120px;
+            right: 0px;
+            width: 350px;
+            opacity: 0.04;
+            z-index: 5;
+            filter: brightness(0) invert(1);
+        }
+
+        /* CLOUDS */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.12);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            border-radius: 9999px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* BIRDS SYMBOLIC */
+        .bird {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            opacity: 0.15;
+            z-index: 5;
+            filter: brightness(0) invert(1);
+        }
+
+        .main-content {
+            position: relative;
+            z-index: 50;
+            padding: 80px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* BETTER TYPOGRAPHY */
+        .game-heading {
+            font-size: 64px;
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+            color: white;
+            white-space: nowrap;
+            text-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .heading-accent {
+            background: linear-gradient(to right, #2dd4bf, #5eead4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 26px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 420px;
+            line-height: 1.5;
+            margin-top: 180px;
+            padding-left: 20px;
+            border-left: 4px solid var(--accent-teal);
+        }
+
+        .qr-area {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 25px;
+            border-radius: 35px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            margin-bottom: 180px;
+            margin-left: 60px;
+        }
+
+        .qr-box {
+            background: white;
+            padding: 12px;
+            border-radius: 20px;
+            width: 180px;
+            height: 180px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        /* BRAND FOOTER */
+        .brand-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .brand-logo {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .brand-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: white;
+            opacity: 0.9;
+        }
+
+        /* EXPORT UI */
+        .export-ui {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+
+        .export-btn {
+            background: #2dd4bf;
+            color: #0f172a;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 20px rgba(45, 212, 191, 0.2);
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(45, 212, 191, 0.3);
+            background: #5eead4;
+        }
+    </style>
+</head>
+
+<body id="master-canvas">
+
+    <div class="export-ui">
+        <button id="download-trigger" class="export-btn">SAVE AS PNG</button>
+    </div>
+
+    <!-- MAIN SQUARE POST -->
+    <div id="linkedin-post" class="post-canvas">
+
+        <div class="sunway-glow"></div>
+
+        <!-- SCENERY DECORATIONS -->
+        <div class="cloud" style="width: 250px; height: 60px; top: 15%; left: 8%;"></div>
+        <div class="cloud" style="width: 180px; height: 45px; top: 25%; left: 40%; transform: scaleX(-1);"></div>
+        <div class="cloud" style="width: 200px; height: 50px; top: 10%; right: 15%;"></div>
+
+        <!-- BIRDS (STATIC FOR PNG) -->
+        <svg class="bird" style="top: 15%; left: 35%;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21,7L9,19L3,13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg>
+        <svg class="bird" style="top: 22%; right: 42%; transform: scale(0.8);" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21,7L9,19L3,13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg>
+
+        <div class="hills-layer">
+            <svg class="w-full h-full" viewBox="0 0 1000 400" preserveAspectRatio="none">
+                <path d="M0,400 L0,300 L150,150 L350,280 L550,100 L800,320 L1000,200 L1000,400 Z"
+                    style="fill: #1e293b;"></path>
+                <path d="M0,400 L0,350 L200,220 L450,340 L700,180 L1000,330 L1000,400 Z"
+                    style="fill: #334155; opacity: 0.8;"></path>
+            </svg>
+        </div>
+
+        <div class="ground-base"></div>
+
+        <!-- STICKMAN ICON (SUBTLE BACKGROUND) -->
+        <img src="public/stickman_assets/hope_stickman.svg" class="bg-stickman" alt="">
+        <img src="public/stickman_assets/hope_stickman.svg"
+            style="position: absolute; bottom: 8%; left: 15%; width: 60px; opacity: 0.1; filter: invert(1);" alt="">
+
+        <!-- PORTRAIT STACK -->
+        <div class="portrait-stack">
+            <div class="portrait-wrapper">
+                <div class="glass-frame-behind"></div>
+                <img src="public/stickman_assets/1.jpg" alt="Abiram T Bijoy" class="hero-portrait">
+            </div>
+
+            <div class="text-center">
+                <h3 class="text-white text-4xl font-black tracking-tight">Abiram T Bijoy</h3>
+                <div class="flex items-center justify-center gap-2 mt-2">
+                    <div class="h-0.5 w-8 bg-teal-400"></div>
+                    <span class="text-teal-400 text-sm font-bold uppercase tracking-widest">Developer</span>
+                    <div class="h-0.5 w-8 bg-teal-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+
+            <!-- LOGO + HEADING CONTAINER -->
+            <div class="flex items-center gap-6 mb-8 -ml-12">
+                <img src="public/stickman_assets/logo.svg" class="w-28 h-28 object-contain -ml-4" alt="Logo">
+                <h1 class="game-heading">
+                    Stickman To <span class="heading-accent">The Rescue</span>
+                </h1>
+            </div>
+
+            <p class="subtitle italic">
+                "A game designed to <span class="text-white font-bold">educate people</span> and <span
+                    class="text-white font-bold">spread awareness</span>
+                regarding <span class="text-teal-300 font-bold underline decoration-teal-400 decoration-4">suicide
+                    prevention.</span>"
+            </p>
+        </div>
+
+        <div class="flex justify-between items-end w-full">
+            <!-- SCAN TO PLAY -->
+            <div class="qr-area">
+                <div class="qr-box">
+                    <img src="public/stickman_assets/Words_Of_Wisdom-1024.png" alt="Scan to Play"
+                        class="w-full h-full object-contain">
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-white font-black text-xl tracking-tight">SCAN TO PLAY</span>
+                    <span class="text-teal-400/70 text-xs font-bold uppercase tracking-widest">Stickman To The
+                        Rescue</span>
+                </div>
+
+            </div>
+
+            <!-- FINAL BRAND FOOTER -->
+            <div class="brand-footer">
+                <img src="public/ME.jpeg" class="brand-logo" alt="Mind Empowered">
+                <span class="brand-text">Mind Empowered</span>
+            </div>
+
+        </div>
+
+        <script>
+            document.getElementById('download-trigger').addEventListener('click', function () {
+                const btn = this;
+                const element = document.getElementById('linkedin-post');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = "GENERATING...";
+                btn.disabled = true;
+
+                // Give the browser a moment to settle
+                setTimeout(() => {
+                    htmlToImage.toPng(element, {
+                        quality: 1,
+                        width: 1000,
+                        height: 1000,
+                        pixelRatio: 2,
+                        cacheBust: true,
+                        // If capturing fonts remains a problem, we can skip them as a last resort
+                        // but we try to capture them first
+                    }).then(function (dataUrl) {
+                        const link = document.createElement('a');
+                        link.download = 'Stickman_Rescue_Spotlight.png';
+                        link.href = dataUrl;
+                        link.click();
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }).catch(function (err) {
+                        console.error('Export failed', err);
+                        // Fallback to simpler capture if the above fails due to CORS
+                        htmlToImage.toPng(element, {
+                            quality: 0.9,
+                            width: 1000,
+                            height: 1000,
+                            skipFontFace: true // Skips remote fonts if they are the problem
+                        }).then(function (dataUrl) {
+                            const link = document.createElement('a');
+                            link.download = 'Stickman_Rescue_Spotlight_Fallback.png';
+                            link.href = dataUrl;
+                            link.click();
+                            btn.innerHTML = "EXPORTED (REDUCED)";
+                            btn.disabled = false;
+                        }).catch(function (err2) {
+                            btn.innerHTML = "FAILED";
+                            btn.disabled = false;
+                        });
+                    });
+                }, 500);
+            });
+        </script>
+</body>
+
+</html>

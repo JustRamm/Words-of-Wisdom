@@ -1,34 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TERMINOLOGY_DATA } from './terminologyData';
+import GameBackground from './GameBackground';
 
-const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGender = 'guy' }) => {
+export default function WordsOfHopeScreen({ 
+    audioManager, 
+    onExit, 
+    isPaused = false, 
+    playerGender = 'guy', 
+    playerData = null, 
+    initialState = 'INTRO' 
+}) {
     // Game Flow States
-    const [gameState, setGameState] = useState('INTRO'); // INTRO, LEVEL_SELECT, TUTORIAL, PLAYING, RESULTS, GAME_OVER, TRANSITIONING
+    const [gameState, setGameState] = useState(initialState); 
     const [score, setScore] = useState(0);
     const [mistakes, setMistakes] = useState(0);
-    const [harmony, setHarmony] = useState(50); // 0 (Gloomy) to 100 (Radiant)
+    const [harmony, setHarmony] = useState(50); 
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [explanation, setExplanation] = useState(null); // Side panel data
+    const [explanation, setExplanation] = useState(null); 
     const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-    const [stigmaAlert, setStigmaAlert] = useState(null); // Left side alert data
+    const [stigmaAlert, setStigmaAlert] = useState(null); 
     const [isAlertVisible, setIsAlertVisible] = useState(false);
 
     // New Enhanced Features
-    const [streak, setStreak] = useState(0); // Consecutive correct catches
-    const [maxStreak, setMaxStreak] = useState(0); // Best streak this session
-    const [explanationMode, setExplanationMode] = useState(false); // Toggle for showing explanations
-    const [wordHistory, setWordHistory] = useState([]); // Track all word pairs encountered
-    const [baseSpeed, setBaseSpeed] = useState(0.05); // Progressive difficulty - increases with score
-    const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Glossary panel toggle
-    const [level, setLevel] = useState(1); // Track current level/wave
-    const [difficulty, setDifficulty] = useState('NORMAL'); // EASY, NORMAL, HARD
-    const [localPaused, setLocalPaused] = useState(false); // Local pause state
-    const [tipsRemaining, setTipsRemaining] = useState(2); // Limited tips per level
+    const [streak, setStreak] = useState(0); 
+    const [maxStreak, setMaxStreak] = useState(0); 
+    const [explanationMode, setExplanationMode] = useState(false); 
+    const [wordHistory, setWordHistory] = useState([]); 
+    const [baseSpeed, setBaseSpeed] = useState(0.05); 
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false); 
+    const [level, setLevel] = useState(1); 
+    const [difficulty, setDifficulty] = useState('NORMAL'); 
+    const [localPaused, setLocalPaused] = useState(false); 
+    const [tipsRemaining, setTipsRemaining] = useState(2); 
     const [isSpeedBoosted, setIsSpeedBoosted] = useState(false);
     const isFirstSpawnRef = useRef(true);
     const [unlockedLevel, setUnlockedLevel] = useState(() => {
         const saved = localStorage.getItem('words_of_hope_unlocked_level');
-        return saved ? parseInt(saved) : 1; // 1: Breeze, 2: Mist, 3: Storm
+        return saved ? parseInt(saved) : 1; 
     });
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -38,7 +46,6 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Refs for Game Loop (Prevents stale closures)
     const scoreRef = useRef(0);
     const currentIndexRef = useRef(0);
     const mistakesRef = useRef(0);
@@ -52,33 +59,19 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const speedBoostRef = useRef(false);
     const baseSpeedRef = useRef(0.05);
     const lastSpawnedYRef = useRef(100);
-
-    // Physics State in Ref for synchronous updates
     const fallingItemsRef = useRef([]);
-
-    // Player Position Ref
     const playerRef = useRef(50);
     const [playerX, setPlayerX] = useState(50);
     const gameContainerRef = useRef(null);
     const [fallingItems, setFallingItems] = useState([]);
-
-    // --- Core Game Logic ---
-
-    // Local copy of shuffled questions
     const [shuffledQuestions, setShuffledQuestions] = useState([]);
 
     useEffect(() => {
-        // Initial shuffle
         setShuffledQuestions([...TERMINOLOGY_DATA.questions].sort(() => Math.random() - 0.5));
-
-        // Start music as early as possible (user click may be required in some browsers, 
-        // but since they usually have to interact with something to reach here, it should work)
         if (audioManager) {
             audioManager.init();
             audioManager.startAmbient('park');
         }
-
-        // SPLASH SCREEN AUTO-TRANSITION
         if (gameState === 'INTRO') {
             const timer = setTimeout(() => {
                 setGameState('LEVEL_SELECT');
@@ -88,18 +81,13 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     }, [gameState]);
 
     const startGame = () => {
-        // Mobile speed adjustment (2.0x for smaller screens to reduce delay)
         const isMobile = window.innerWidth < 768;
         const speedMultiplier = isMobile ? 2.0 : 1;
-
-        // Set dynamic parameters based on difficulty
         let initialSpeed = 0.05;
         if (difficulty === 'EASY') initialSpeed = 0.035;
         if (difficulty === 'HARD') initialSpeed = 0.08;
-
         initialSpeed *= speedMultiplier;
 
-        // Shuffle again for a fresh start each time
         const reshuffled = [...TERMINOLOGY_DATA.questions].sort(() => Math.random() - 0.5);
         setShuffledQuestions(reshuffled);
 
@@ -118,28 +106,27 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         setIsAlertVisible(false);
         isProcessingSetRef.current = false;
         hasInteractionRef.current = false;
-        spawnCooldownRef.current = 6000; // Initial delay
+        spawnCooldownRef.current = 6000; 
 
-        // Reset new enhanced features
         setStreak(0);
         setWordHistory([]);
-        setBaseSpeed(initialSpeed); // Start at base difficulty
+        setBaseSpeed(initialSpeed); 
         baseSpeedRef.current = initialSpeed;
         setIsHistoryOpen(false);
         setExplanationMode(false);
         setLevel(1);
-        setTipsRemaining(2); // Reset tips
-        isFirstSpawnRef.current = true; // Reset spawn position for new game
+        setTipsRemaining(2); 
+        isFirstSpawnRef.current = true; 
 
         audioManager.playPop();
         if (audioManager) audioManager.startAmbient('park');
 
-        // PRE-FILL SCREEN FOR UNIFORM MOMENTUM
-        spawnSet(45);  // Visible
-        spawnSet(5);   // Mid-way
-        spawnSet(-35); // Entering
-        spawnSet(-75); // Queued (Eliminates delay for 4th set)
+        spawnSet(45);  
+        spawnSet(5);   
+        spawnSet(-35); 
+        spawnSet(-75); 
     };
+
 
     // Sidebar auto-hide logic
     useEffect(() => {
@@ -371,8 +358,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     const nextLevel = prev + 1;
                     const isMobile = window.innerWidth < 768;
                     const speedMultiplier = isMobile ? 2.0 : 1;
-                    // Strict speed jump per level, no gradual build up
-                    const newSpeed = currentSpeed + (0.035 * speedMultiplier);
+                    const newSpeed = baseSpeedRef.current + (0.035 * speedMultiplier);
                     setBaseSpeed(newSpeed);
                     baseSpeedRef.current = newSpeed;
                     return nextLevel;
@@ -473,71 +459,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             onTouchStart={handlePointerMove}
             onTouchMove={handlePointerMove}
         >
-            {/* ILLUSTRATIVE SCENERY BACKGROUND */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-                {/* Sun/Moon Glow */}
-                <div
-                    className="absolute top-[10%] left-[15%] w-64 h-64 rounded-full blur-[100px] transition-all duration-1000"
-                    style={{
-                        background: harmony > 50 ? 'rgba(255, 230, 100, 0.2)' : 'rgba(150, 180, 255, 0.1)',
-                        transform: `scale(${1 + harmony / 100})`
-                    }}
-                />
-
-                {/* Animated Clouds */}
-                {[...Array(4)].map((_, i) => (
-                    <div
-                        key={i}
-                        className="absolute bg-white/10 backdrop-blur-sm rounded-full animate-float-slow"
-                        style={{
-                            width: `${150 + i * 50}px`,
-                            height: `${40 + i * 10}px`,
-                            top: `${15 + i * 8}%`,
-                            left: `${(i * 30 + 10) % 100}%`,
-                            animationDelay: `${i * 2}s`,
-                            opacity: 0.2 + (harmony / 200)
-                        }}
-                    />
-                ))}
-
-                {/* Distant Mountains */}
-                <svg className="absolute bottom-0 w-full h-[40%] transition-all duration-1000" viewBox="0 0 1000 400" preserveAspectRatio="none">
-                    <path
-                        d="M0,400 L0,300 L150,150 L350,280 L550,100 L800,320 L1000,200 L1000,400 Z"
-                        style={{ fill: `hsl(${220 + harmony * 0.2}, ${10 + harmony * 0.2}%, ${10 + harmony * 0.1}%)` }}
-                    />
-                    <path
-                        d="M0,400 L0,350 L200,220 L450,340 L700,180 L1000,330 L1000,400 Z"
-                        style={{ fill: `hsl(${220 + harmony * 0.2}, ${15 + harmony * 0.2}%, ${12 + harmony * 0.15}%)`, opacity: 0.8 }}
-                    />
-                </svg>
-
-                {/* Stylized Trees (Mid-ground) */}
-                <div className="absolute bottom-[10%] w-full flex justify-around items-end px-12 transition-all duration-1000" style={{ opacity: 0.3 + harmony / 200 }}>
-                    {[...Array(8)].map((_, i) => (
-                        <div key={i} className="flex flex-col items-center">
-                            <div
-                                className="w-0 h-0 border-l-[15px] border-r-[15px] border-b-[40px] border-l-transparent border-r-transparent transition-colors duration-1000"
-                                style={{ borderBottomColor: `hsl(${140 + harmony * 0.2}, ${20 + harmony * 0.2}%, ${15 + harmony * 0.1}%)` }}
-                            />
-                            <div
-                                className="w-2 h-4 transition-colors duration-1000"
-                                style={{ backgroundColor: `hsl(${20 + harmony * 0.1}, 20%, 10%)` }}
-                            />
-                        </div>
-                    ))}
-                </div>
-
-                {/* Ground */}
-                <div
-                    className="absolute bottom-0 left-0 right-0 h-[15%] transition-all duration-1000"
-                    style={{
-                        background: `linear-gradient(to bottom, 
-                            hsl(${130 + harmony * 0.2}, ${15 + harmony * 0.2}%, ${8 + harmony * 0.1}%) 0%,
-                            hsl(${130 + harmony * 0.2}, ${15 + harmony * 0.2}%, ${5 + harmony * 0.1}%) 100%)`
-                    }}
-                />
-            </div>
+            <GameBackground harmony={harmony} />
 
             {/* Fixed Header (Gameplay only) */}
             {!['INTRO', 'LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
@@ -777,7 +699,15 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                                 Word <span className="text-teal-400">Wisdom.</span>
                             </h2>
                             
-                            <div className="h-1.5 w-full max-w-[300px] bg-white/10 rounded-full mt-4 overflow-hidden border border-white/5">
+                            {playerData && (
+                                <div className="mt-2 animate-fade-in" style={{ animationDelay: '800ms' }}>
+                                    <p className="text-teal-400/80 font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">
+                                        Welcome, {playerData.name} of {playerData.college}
+                                    </p>
+                                </div>
+                            )}
+                            
+                            <div className="h-1.5 w-full max-w-[300px] bg-white/10 rounded-full mt-6 overflow-hidden border border-white/5">
                                 <div className="h-full bg-teal-400 w-full animate-splash-loader origin-left" style={{ animationDuration: '5000ms' }} />
                             </div>
                         </div>
@@ -1203,6 +1133,4 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             )}
         </div>
     );
-};
-
-export default WordsOfHopeScreen;
+}
