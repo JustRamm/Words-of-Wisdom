@@ -24,6 +24,10 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const [difficulty, setDifficulty] = useState('NORMAL'); // EASY, NORMAL, HARD
     const [localPaused, setLocalPaused] = useState(false); // Local pause state
     const [tipsRemaining, setTipsRemaining] = useState(2); // Limited tips per level
+    const [unlockedLevel, setUnlockedLevel] = useState(() => {
+        const saved = localStorage.getItem('words_of_hope_unlocked_level');
+        return saved ? parseInt(saved) : 1; // 1: Breeze, 2: Mist, 3: Storm
+    });
 
     // Refs for Game Loop (Prevents stale closures)
     const scoreRef = useRef(0);
@@ -363,6 +367,14 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
 
         // Win state check - Final win at higher score (e.g. 12 seeds or all questions)
         if (scoreRef.current >= 12) {
+            // Unlock next level logic
+            if (difficulty === 'EASY' && unlockedLevel < 2) {
+                setUnlockedLevel(2);
+                localStorage.setItem('words_of_hope_unlocked_level', '2');
+            } else if (difficulty === 'NORMAL' && unlockedLevel < 3) {
+                setUnlockedLevel(3);
+                localStorage.setItem('words_of_hope_unlocked_level', '3');
+            }
             triggerEndGame('RESULTS');
         }
     };
@@ -638,8 +650,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     </button>
 
                     <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-12">Choose Your Path</h2>
-                    
-                    <div className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 w-full overflow-x-auto md:overflow-visible pb-8 md:pb-0 px-4 md:px-0 snap-x snap-mandatory scrollbar-hide">
+                              <div className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 w-full overflow-x-auto md:overflow-visible pb-8 md:pb-0 px-4 md:px-0 snap-x snap-mandatory scrollbar-hide">
                         {/* Easy Mode */}
                         <div 
                             onClick={() => { setDifficulty('EASY'); setGameState('TUTORIAL'); audioManager.playPop(); }}
@@ -652,32 +663,56 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                             <p className="text-slate-400 text-sm font-medium leading-relaxed">Slower words. Focused on learning the terminology at your own pace.</p>
                             <div className="mt-8 px-6 py-2 bg-white/10 rounded-full text-[10px] font-black text-teal-400 uppercase tracking-widest">Focus: Learning</div>
                         </div>
-
+ 
                         {/* Normal Mode */}
                         <div 
-                            onClick={() => { setDifficulty('NORMAL'); setGameState('TUTORIAL'); audioManager.playPop(); }}
-                            className="flex-shrink-0 w-[280px] md:w-auto snap-center bg-white/10 border-2 border-teal-500 p-10 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-110 active:scale-95 cursor-pointer flex flex-col items-center group shadow-4xl relative overflow-hidden"
+                            onClick={() => { 
+                                if (unlockedLevel >= 2) {
+                                    setDifficulty('NORMAL'); setGameState('TUTORIAL'); audioManager.playPop(); 
+                                } else {
+                                    audioManager.playSad();
+                                }
+                            }}
+                            className={`flex-shrink-0 w-[280px] md:w-auto snap-center p-10 rounded-[3rem] backdrop-blur-xl transition-all flex flex-col items-center group shadow-4xl relative overflow-hidden ${unlockedLevel >= 2 
+                                ? 'bg-white/10 border-2 border-teal-500 hover:scale-110 active:scale-95 cursor-pointer' 
+                                : 'bg-slate-900/40 border-2 border-white/5 grayscale opacity-60 cursor-not-allowed'}`}
                         >
-                            <div className="absolute top-0 right-0 px-4 py-1 bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest rounded-bl-xl shadow-lg">Recommended</div>
-                            <div className="w-24 h-24 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                                <span className="text-5xl text-white">🌿</span>
+                            {unlockedLevel >= 2 && <div className="absolute top-0 right-0 px-4 py-1 bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest rounded-bl-xl shadow-lg">Recommended</div>}
+                            <div className={`w-24 h-24 rounded-full mb-6 flex items-center justify-center transition-colors ${unlockedLevel >= 2 ? 'bg-white/20 group-hover:bg-white/30' : 'bg-slate-800'}`}>
+                                <span className="text-5xl">{unlockedLevel >= 2 ? '🌿' : '🔒'}</span>
                             </div>
                             <h3 className="text-3xl font-black text-white mb-2 uppercase">Mist</h3>
                             <p className="text-slate-300 text-sm font-medium leading-relaxed">Standard speed. Balanced challenge for terminology mastery.</p>
-                            <div className="mt-8 px-8 py-3 bg-teal-500 rounded-full text-[10px] font-black text-white uppercase tracking-widest shadow-xl">Focus: Mastery</div>
+                            {unlockedLevel >= 2 ? (
+                                <div className="mt-8 px-8 py-3 bg-teal-500 rounded-full text-[10px] font-black text-white uppercase tracking-widest shadow-xl">Focus: Mastery</div>
+                            ) : (
+                                <div className="mt-8 px-6 py-2 bg-white/5 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest">Complete Breeze to Unlock</div>
+                            )}
                         </div>
-
+ 
                         {/* Hard Mode */}
                         <div 
-                            onClick={() => { setDifficulty('HARD'); setGameState('TUTORIAL'); audioManager.playPop(); }}
-                            className="flex-shrink-0 w-[280px] md:w-auto snap-center bg-white/5 border-2 border-white/10 hover:border-orange-500 p-8 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
+                            onClick={() => { 
+                                if (unlockedLevel >= 3) {
+                                    setDifficulty('HARD'); setGameState('TUTORIAL'); audioManager.playPop(); 
+                                } else {
+                                    audioManager.playSad();
+                                }
+                            }}
+                            className={`flex-shrink-0 w-[280px] md:w-auto snap-center p-8 rounded-[3rem] backdrop-blur-xl transition-all flex flex-col items-center group shadow-2xl ${unlockedLevel >= 3 
+                                ? 'bg-white/5 border-2 border-white/10 hover:border-orange-500 hover:scale-105 active:scale-95 cursor-pointer' 
+                                : 'bg-slate-900/40 border-2 border-white/5 grayscale opacity-60 cursor-not-allowed'}`}
                         >
-                            <div className="w-20 h-20 bg-orange-500/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-orange-500/40 transition-colors">
-                                <span className="text-4xl text-orange-400">⛈️</span>
+                            <div className={`w-20 h-20 rounded-full mb-6 flex items-center justify-center transition-colors ${unlockedLevel >= 3 ? 'bg-orange-500/20 group-hover:bg-orange-500/40' : 'bg-slate-800'}`}>
+                                <span className="text-4xl">{unlockedLevel >= 3 ? '⛈️' : '🔒'}</span>
                             </div>
                             <h3 className="text-2xl font-black text-white mb-2 uppercase">Storm</h3>
                             <p className="text-slate-400 text-sm font-medium leading-relaxed">Rapid words. Test your reflexes and quick thinking for higher stakes.</p>
-                            <div className="mt-8 px-6 py-2 bg-white/10 rounded-full text-[10px] font-black text-orange-400 uppercase tracking-widest">Focus: Reflexes</div>
+                            {unlockedLevel >= 3 ? (
+                                <div className="mt-8 px-6 py-2 bg-white/10 rounded-full text-[10px] font-black text-orange-400 uppercase tracking-widest">Focus: Reflexes</div>
+                            ) : (
+                                <div className="mt-8 px-6 py-2 bg-white/5 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest">Complete Mist to Unlock</div>
+                            )}
                         </div>
                     </div>
                 </div>
