@@ -758,32 +758,40 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             )}
  
             {gameState === 'INTRO' && (
-                <div className="relative z-10 max-w-2xl w-full p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-hero">
-                    {/* Organization Branding */}
-                    <div className="flex flex-col items-center mb-16 animate-scale-in">
-                        <div className="w-24 h-24 bg-white p-2 rounded-3xl shadow-4xl mb-6 overflow-hidden border-2 border-white/20 backdrop-blur-md">
-                            <img src="/ME.jpeg" alt="Mind Empowered" className="w-full h-full object-contain" />
+                <>
+                    {/* TOP LEFT BRANDING - NOW PINNED TO SCREEN CORNER */}
+                    <div className="absolute top-6 left-6 z-[200] animate-slide-in-left cursor-default">
+                        <div className="w-16 h-16 bg-white p-1 rounded-2xl shadow-4xl border-2 border-white/20 transform hover:scale-105 transition-transform overflow-hidden">
+                            <img src="/ME.jpeg" alt="Mind Empowered" className="w-full h-full object-contain rounded-xl" />
                         </div>
-                        <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-2 leading-none">Presented By</span>
-                        <h1 className="text-xl font-black text-white uppercase tracking-widest">Mind Empowered</h1>
                     </div>
 
-                    <div className="w-24 h-24 bg-white/5 backdrop-blur-xl rounded-[2rem] mb-12 flex items-center justify-center border border-white/10 shadow-2xl -rotate-6">
-                        <img src="/stickman_assets/hope_stickman.svg" alt="Hope" className="w-16 h-16 animate-pulse" />
-                    </div>
+                    <div className="relative z-10 max-w-4xl w-full h-full p-8 text-center animate-fade-in flex flex-col items-center justify-center words-of-hope-hero overflow-hidden">
+                        {/* MAIN HERO CONTENT (CENTRED) */}
+                        <div className="flex flex-col items-center animate-scale-in">
+                            <div className="w-40 h-40 bg-white/5 backdrop-blur-3xl rounded-[3rem] mb-12 flex items-center justify-center border border-white/20 shadow-[0_30px_60px_rgba(0,0,0,0.5)] -rotate-6 transform hover:rotate-0 transition-all duration-700">
+                                <img src="/stickman_assets/hope_stickman.svg" alt="Hope" className="w-28 h-28 animate-pulse drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]" />
+                            </div>
 
-                    <h2 className="text-4xl md:text-7xl font-black text-white mb-6 leading-tight uppercase tracking-tighter">
-                        Word <span className="text-teal-400">Wisdom.</span>
-                    </h2>
-                    
-                    <div className="w-full max-w-md bg-white/10 h-1.5 rounded-full overflow-hidden mb-6 border border-white/5">
-                        <div className="h-full bg-teal-400 w-full animate-splash-loader origin-left" style={{ animationDuration: '5000ms' }} />
+                            <h2 className="text-6xl md:text-9xl font-black text-white mb-2 leading-none uppercase tracking-tighter drop-shadow-2xl">
+                                Word <span className="text-teal-400">Wisdom.</span>
+                            </h2>
+                            
+                            <div className="h-1.5 w-full max-w-[300px] bg-white/10 rounded-full mt-4 overflow-hidden border border-white/5">
+                                <div className="h-full bg-teal-400 w-full animate-splash-loader origin-left" style={{ animationDuration: '5000ms' }} />
+                            </div>
+                        </div>
+                        
+                        {/* BOTTOM BRANDING */}
+                        <div className="absolute bottom-12 left-0 right-0 flex flex-col items-center animate-fade-in delay-500">
+                            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.5em] mb-3">A Collaborative Vision</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Presented By</span>
+                                <span className="text-xs font-black text-white uppercase tracking-[0.3em] border-b border-teal-400/30 pb-1">Mind Empowered</span>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <span className="text-[10px] font-black text-teal-400/60 uppercase tracking-[0.3em] animate-pulse">
-                        Entering the Wisdom Path...
-                    </span>
-                </div>
+                </>
             )}
 
             {gameState === 'TUTORIAL' && (
