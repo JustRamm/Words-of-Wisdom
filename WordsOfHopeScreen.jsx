@@ -35,6 +35,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     const isProcessingSetRef = useRef(false);
     const hasInteractionRef = useRef(false);
     const requestRef = useRef();
+    const pausedRef = useRef(false);
 
     // Physics State in Ref for synchronous updates
     const fallingItemsRef = useRef([]);
@@ -71,10 +72,16 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     }, [gameState]);
 
     const startGame = () => {
+        // Mobile speed adjustment (1.5x for smaller screens)
+        const isMobile = window.innerWidth < 768;
+        const speedMultiplier = isMobile ? 1.5 : 1;
+
         // Set dynamic parameters based on difficulty
         let initialSpeed = 0.05;
         if (difficulty === 'EASY') initialSpeed = 0.035;
         if (difficulty === 'HARD') initialSpeed = 0.08;
+
+        initialSpeed *= speedMultiplier;
 
         // Shuffle again for a fresh start each time
         const reshuffled = [...TERMINOLOGY_DATA.questions].sort(() => Math.random() - 0.5);
@@ -139,8 +146,12 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         if (gameState !== 'PLAYING') return;
         setLocalPaused(prev => {
             const next = !prev;
-            if (next) audioManager.pauseAll();
-            else audioManager.resumeAll();
+            pausedRef.current = next;
+            if (next) {
+                audioManager.pauseAll();
+            } else {
+                audioManager.resumeAll();
+            }
             return next;
         });
     };
@@ -180,7 +191,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
 
     // The Game Loop
     const update = () => {
-        if (gameState !== 'PLAYING' || isPaused || localPaused) {
+        if (gameState !== 'PLAYING' || isPaused || localPaused || pausedRef.current) {
             requestRef.current = requestAnimationFrame(update);
             return;
         }
@@ -317,8 +328,10 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             if (scoreRef.current % 4 === 0) {
                 setLevel(prev => {
                     const nextLevel = prev + 1;
+                    const isMobile = window.innerWidth < 768;
+                    const speedMultiplier = isMobile ? 1.5 : 1;
                     // Strict speed jump per level, no gradual build up
-                    setBaseSpeed(currentSpeed => currentSpeed + 0.035);
+                    setBaseSpeed(currentSpeed => currentSpeed + (0.035 * speedMultiplier));
                     return nextLevel;
                 });
                 setTipsRemaining(prev => prev + 1); // Reward a tip
@@ -475,108 +488,113 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                 />
             </div>
 
-            {/* Header */}
-            <div className="absolute top-8 left-0 right-0 px-8 flex justify-between items-center z-50 words-of-hope-hdr">
-                <div className="flex flex-col words-of-hope-hdr-title">
-                    <h1 className="text-white font-black uppercase tracking-[0.3em] text-[10px] md:text-lg drop-shadow-lg">
-                        {TERMINOLOGY_DATA.title}
-                    </h1>
-                    <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 to-transparent rounded-full mt-1" />
-                </div>
-
-                <div className="flex items-center gap-4 words-of-hope-hdr-actions">
-                    {/* Streak Counter */}
-                    {gameState === 'PLAYING' && (
-                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl">
-                            <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">🔥 Streak</span>
-                            <span className="text-white font-black text-2xl leading-none">{streak}</span>
-                            {maxStreak > 0 && <span className="text-[7px] text-white/40 mt-0.5">Best: {maxStreak}</span>}
-                        </div>
-                    )}
-
-                    <div className="flex flex-col items-end">
-                        <span className="text-[8px] font-black text-teal-400 uppercase tracking-widest leading-none mb-1">Level {level} (Target {level * 4})</span>
-                        <span className="text-white font-black text-xl leading-none">{score}<span className="text-white/30 text-sm font-medium ml-1">/ 12</span></span>
+            {/* Fixed Header (Gameplay only) */}
+            {!['INTRO', 'LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
+                <div className="absolute top-4 md:top-8 left-0 right-0 px-4 md:px-8 flex justify-between items-center z-50 words-of-hope-hdr">
+                    {/* Hide Title on Mobile */}
+                    <div className="hidden md:flex flex-col words-of-hope-hdr-title">
+                        <h1 className="text-white font-black uppercase tracking-[0.3em] text-lg drop-shadow-lg leading-tight">
+                            {TERMINOLOGY_DATA.title}
+                        </h1>
+                        <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 to-transparent rounded-full mt-1" />
                     </div>
 
-                    {/* Explanation Mode Toggle */}
-                    {gameState === 'PLAYING' && (
-                        <button
-                            onClick={() => {
-                                if (explanationMode) {
-                                    setExplanationMode(false);
-                                } else if (tipsRemaining > 0) {
-                                    setExplanationMode(true);
-                                    setTipsRemaining(prev => prev - 1);
+                    <div className="flex items-center gap-2 md:gap-4 words-of-hope-hdr-actions w-full md:w-auto justify-between md:justify-end">
+                        {/* Streak Counter */}
+                        {gameState === 'PLAYING' && (
+                            <div className="flex flex-col items-center bg-white/10 backdrop-blur-md border border-white/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl">
+                                <span className="text-[7px] md:text-[8px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">🔥 Streak</span>
+                                <span className="text-white font-black text-lg md:text-2xl leading-none">{streak}</span>
+                                {maxStreak > 0 && <span className="hidden md:block text-[7px] text-white/40 mt-0.5">Best: {maxStreak}</span>}
+                            </div>
+                        )}
+
+                        <div className="flex flex-col items-end">
+                            <span className="text-[7px] md:text-[8px] font-black text-teal-400 uppercase tracking-widest leading-none mb-0.5 md:mb-1">Lvl {level} (Target {level * 4})</span>
+                            <span className="text-white font-black text-base md:text-xl leading-none">{score}<span className="text-white/30 text-xs md:text-sm font-medium ml-0.5 md:ml-1">/ 12</span></span>
+                        </div>
+
+                        {/* Explanation Mode Toggle */}
+                        {gameState === 'PLAYING' && (
+                            <button
+                                onClick={() => {
+                                    if (explanationMode) {
+                                        setExplanationMode(false);
+                                    } else if (tipsRemaining > 0) {
+                                        setExplanationMode(true);
+                                        setTipsRemaining(prev => prev - 1);
+                                        audioManager.playPop();
+                                    }
+                                }}
+                                disabled={!explanationMode && tipsRemaining === 0}
+                                className={`px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${explanationMode
+                                    ? 'bg-teal-500 border-teal-400 text-white hover:scale-105 active:scale-95 border'
+                                    : tipsRemaining > 0
+                                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 active:scale-95 border'
+                                        : 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed border'
+                                    }`}
+                                title={tipsRemaining > 0 ? "Use a tip to reveal the answer" : "Out of tips for now"}
+                            >
+                                💡 Tips ({tipsRemaining})
+                            </button>
+                        )}
+
+                        {/* Word History Button */}
+                        {gameState === 'PLAYING' && wordHistory.length > 0 && (
+                            <button
+                                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                            >
+                                <span className="md:hidden">📚 {wordHistory.length}</span>
+                                <span className="hidden md:inline">📚 History ({wordHistory.length})</span>
+                            </button>
+                        )}
+
+                        {/* Back Button for Menus */}
+                        {['LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
+                            <button
+                                onClick={() => {
                                     audioManager.playPop();
-                                }
-                            }}
-                            disabled={!explanationMode && tipsRemaining === 0}
-                            className={`px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${explanationMode
-                                ? 'bg-teal-500 border-teal-400 text-white hover:scale-105 active:scale-95 border'
-                                : tipsRemaining > 0
-                                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 active:scale-95 border'
-                                    : 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed border'
-                                }`}
-                            title={tipsRemaining > 0 ? "Use a tip to reveal the answer" : "Out of tips for now"}
-                        >
-                            💡 Tips ({tipsRemaining})
-                        </button>
-                    )}
+                                    if (gameState === 'TUTORIAL') setGameState('LEVEL_SELECT');
+                                    else onExit();
+                                }}
+                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                            >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                                Back
+                            </button>
+                        )}
 
-                    {/* Word History Button */}
-                    {gameState === 'PLAYING' && wordHistory.length > 0 && (
-                        <button
-                            onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
-                        >
-                            📚 History ({wordHistory.length})
-                        </button>
-                    )}
+                        {/* Exit Button - Hidden on mobile header (use pause menu) */}
+                        {!['INTRO', 'LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
+                            <button
+                                onClick={onExit}
+                                className="hidden md:block bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                            >
+                                Exit Path
+                            </button>
+                        )}
 
-                    {/* Back Button for Menus */}
-                    {['LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
-                        <button
-                            onClick={() => {
-                                audioManager.playPop();
-                                if (gameState === 'TUTORIAL') setGameState('LEVEL_SELECT');
-                                else onExit();
-                            }}
-                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                        >
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                            Back
-                        </button>
-                    )}
-
-                    {/* Exit Button for actual game screens */}
-                    {!['INTRO', 'LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
-                        <button
-                            onClick={onExit}
-                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
-                        >
-                            Exit Path
-                        </button>
-                    )}
-
-                    {/* Pause Button - Gameplay only */}
-                    {['PLAYING', 'RESULTS', 'GAME_OVER'].includes(gameState) && (
-                        <button
-                            onClick={togglePause}
-                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white p-2 rounded-full transition-all hover:scale-105 active:scale-95"
-                            title="Pause Game (P)"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                {localPaused ?
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                    :
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                }
-                            </svg>
-                        </button>
-                    )}
+                        {/* Pause Button - Gameplay only */}
+                        {['PLAYING', 'RESULTS', 'GAME_OVER'].includes(gameState) && (
+                            <button
+                                onClick={togglePause}
+                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white p-2 rounded-full transition-all hover:scale-105 active:scale-95"
+                                title="Pause Game (P)"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    {localPaused ?
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        :
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    }
+                                </svg>
+                            </button>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
+
 
             {/* PAUSE OVERLAY */}
             {localPaused && (
@@ -609,15 +627,23 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             )}
 
             {gameState === 'LEVEL_SELECT' && (
-                <div className="relative z-10 max-w-4xl w-full p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-level-select">
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">Choose Your Path</h2>
-                    <p className="text-teal-200 text-lg font-bold mb-12 uppercase tracking-widest opacity-70">Adjust the intensity of your learning journey</p>
+                <div className="relative z-10 max-w-6xl w-full p-6 md:p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-level-select">
+                    {/* Fixed Back Button in true corner */}
+                    <button
+                        onClick={() => { audioManager.playPop(); onExit(); }}
+                        className="fixed top-6 left-6 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 z-[2000]"
+                    >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        Back
+                    </button>
+
+                    <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-12">Choose Your Path</h2>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+                    <div className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 w-full overflow-x-auto md:overflow-visible pb-8 md:pb-0 px-4 md:px-0 snap-x snap-mandatory scrollbar-hide">
                         {/* Easy Mode */}
                         <div 
                             onClick={() => { setDifficulty('EASY'); setGameState('TUTORIAL'); audioManager.playPop(); }}
-                            className="bg-white/5 border-2 border-white/10 hover:border-teal-400 p-8 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
+                            className="flex-shrink-0 w-[280px] md:w-auto snap-center bg-white/5 border-2 border-white/10 hover:border-teal-400 p-8 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
                         >
                             <div className="w-20 h-20 bg-teal-400/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-teal-400/40 transition-colors">
                                 <span className="text-4xl text-teal-400">🍃</span>
@@ -630,7 +656,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                         {/* Normal Mode */}
                         <div 
                             onClick={() => { setDifficulty('NORMAL'); setGameState('TUTORIAL'); audioManager.playPop(); }}
-                            className="bg-white/10 border-2 border-teal-500 p-10 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-110 active:scale-95 cursor-pointer flex flex-col items-center group shadow-4xl relative overflow-hidden"
+                            className="flex-shrink-0 w-[280px] md:w-auto snap-center bg-white/10 border-2 border-teal-500 p-10 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-110 active:scale-95 cursor-pointer flex flex-col items-center group shadow-4xl relative overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 px-4 py-1 bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest rounded-bl-xl shadow-lg">Recommended</div>
                             <div className="w-24 h-24 bg-white/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-white/30 transition-colors">
@@ -644,7 +670,7 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                         {/* Hard Mode */}
                         <div 
                             onClick={() => { setDifficulty('HARD'); setGameState('TUTORIAL'); audioManager.playPop(); }}
-                            className="bg-white/5 border-2 border-white/10 hover:border-orange-500 p-8 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
+                            className="flex-shrink-0 w-[280px] md:w-auto snap-center bg-white/5 border-2 border-white/10 hover:border-orange-500 p-8 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
                         >
                             <div className="w-20 h-20 bg-orange-500/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-orange-500/40 transition-colors">
                                 <span className="text-4xl text-orange-400">⛈️</span>
@@ -679,12 +705,21 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
             )}
 
             {gameState === 'TUTORIAL' && (
-                <div className="relative z-10 max-w-2xl w-full p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-tutorial">
-                    <div className="w-24 h-24 bg-teal-500/20 backdrop-blur-xl rounded-2xl mb-8 flex items-center justify-center border border-teal-400/30">
+                <div className="relative z-10 max-w-2xl w-full p-6 md:p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-tutorial">
+                    {/* Fixed Back Button in true corner */}
+                    <button
+                        onClick={() => { audioManager.playPop(); setGameState('LEVEL_SELECT'); }}
+                        className="fixed top-6 left-6 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 z-[2000]"
+                    >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        Back
+                    </button>
+
+                    <div className="w-20 h-20 md:w-24 md:h-24 bg-teal-500/20 backdrop-blur-xl rounded-2xl mb-6 flex items-center justify-center border border-teal-400/30">
                         <img src="/stickman_assets/hope_stickman.svg" alt="Tutor" className="w-16 h-16 animate-bounce-subtle" />
                     </div>
 
-                    <h2 className="text-3xl md:text-5xl font-black text-white mb-8 uppercase tracking-tighter">Your Mission</h2>
+                    <h2 className="text-2xl md:text-5xl font-black text-white mb-6 md:mb-8 uppercase tracking-tighter">Your Mission</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 w-full text-left">
                         <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
@@ -727,10 +762,10 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                             </p>
                         </div>
                     </div>
-
+ 
                     <button
                         onClick={startGame}
-                        className="px-12 py-5 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest text-lg shadow-2xl hover:bg-teal-400 transition-all hover:-translate-y-1 active:scale-95 border-b-4 border-teal-700"
+                        className="w-full md:w-auto px-12 py-4 md:py-5 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest text-base md:text-lg shadow-2xl hover:bg-teal-400 transition-all hover:-translate-y-1 active:scale-95 border-b-4 border-teal-700"
                     >
                         Start Your Path
                     </button>

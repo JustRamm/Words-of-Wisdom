@@ -357,31 +357,34 @@ class SoundEngine {
 
         const nodes = [];
 
-        // Special handling for Park Theme with MP3
+        // Special handling for Park Theme (Sweet Melody Fallback/Override)
         if (theme === 'park') {
-            const buffer = await this.getBuffer('/ThemeAudio/park.mp3');
-            if (buffer) {
-                const source = this.ctx.createBufferSource();
-                source.buffer = buffer;
-                source.loop = true;
+            const sweetFreqs = [261.63, 329.63, 392.00, 493.88, 523.25]; // C Major 7/9
+            const synthGain = this.ctx.createGain();
+            synthGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+            synthGain.gain.exponentialRampToValueAtTime(0.12, this.ctx.currentTime + 3);
+            
+            sweetFreqs.forEach((f, i) => {
+                const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-
-                // Softer volume for background with fade-in
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(f, this.ctx.currentTime);
+                // Subtle detune for sweetness
+                osc.detune.setValueAtTime(Math.random() * 4 - 2, this.ctx.currentTime);
+                
                 gain.gain.setValueAtTime(0.001, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.3, this.ctx.currentTime + 2);
-
-                if (this.musicGeneration !== gen) {
-                    source.stop();
-                    return;
-                }
-
-                source.connect(gain);
-                gain.connect(this.masterGain);
-                source.start();
-                nodes.push({ source, gain });
-                this.musicNodes = nodes;
-                return; // Exit early, don't play synth pad if MP3 works
-            }
+                gain.gain.exponentialRampToValueAtTime(0.04, this.ctx.currentTime + 3 + (i * 0.5));
+                
+                osc.connect(gain);
+                gain.connect(synthGain);
+                osc.start();
+                nodes.push({ osc, gain, baseFreq: f });
+            });
+            
+            synthGain.connect(this.masterGain);
+            this.musicNodes = nodes;
+            return;
         }
 
         // Special handling for Campus Theme with MP3
@@ -492,8 +495,11 @@ class SoundEngine {
 
         this.musicNodes.forEach((node, i) => {
             if (node.osc) {
-                const targetFreq = freqs[i] || node.baseFreq;
-                node.osc.frequency.exponentialRampToValueAtTime(targetFreq, this.ctx.currentTime + 2);
+                const targetFreq = freqs[i] || node.baseFreq || 440;
+                // Guard against invalid or non-positive values (exponentialRamp requires > 0)
+                if (Number.isFinite(targetFreq) && targetFreq > 0) {
+                    node.osc.frequency.exponentialRampToValueAtTime(targetFreq, this.ctx.currentTime + 2);
+                }
             }
         });
     }
