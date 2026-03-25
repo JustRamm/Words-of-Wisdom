@@ -28,6 +28,13 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
         const saved = localStorage.getItem('words_of_hope_unlocked_level');
         return saved ? parseInt(saved) : 1; // 1: Breeze, 2: Mist, 3: Storm
     });
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Refs for Game Loop (Prevents stale closures)
     const scoreRef = useRef(0);
@@ -174,6 +181,9 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
     // Handle Mouse/Touch Movement
     const handlePointerMove = (e) => {
         if (gameState !== 'PLAYING' || isPaused || !gameContainerRef.current) return;
+        
+        // If on mobile, ignore direct screen movement (use joystick instead)
+        if (isMobile) return;
 
         // Robust coordinate extraction for both Pointer and Touch events
         let clientX;
@@ -985,7 +995,14 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                     )}
 
                     {/* Player */}
-                    <div className="absolute z-[100]" style={{ left: `${playerX}%`, bottom: '10%', transform: 'translateX(-50%)' }}>
+                    <div 
+                        className="absolute z-[100] transition-colors" 
+                        style={{ 
+                            left: `${playerX}%`, 
+                            bottom: isMobile ? '120px' : '10%', // Lift player above joystick area
+                            transform: 'translateX(-50%)' 
+                        }}
+                    >
                         <div className="relative">
                             <div className={`absolute inset-0 bg-teal-400/20 blur-3xl rounded-full transition-all duration-500 ${harmony > 60 ? 'scale-150' : 'scale-75'}`} />
                             <img
@@ -995,6 +1012,71 @@ const WordsOfHopeScreen = ({ audioManager, onExit, isPaused = false, playerGende
                             />
                         </div>
                     </div>
+
+                    {/* MOBILE HORIZONTAL JOYSTICK */}
+                    {isMobile && (
+                        <div className="absolute bottom-4 left-0 right-0 px-8 py-6 z-[200] flex flex-col items-center">
+                            <div 
+                                className="relative w-full max-w-[400px] h-20 bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden touch-none"
+                                onPointerDown={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                    const clampedX = Math.max(5, Math.min(95, x));
+                                    setPlayerX(clampedX);
+                                    playerRef.current = clampedX;
+                                }}
+                                onPointerMove={(e) => {
+                                    if (e.buttons > 0) { // Pointer is pressed
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                        const clampedX = Math.max(5, Math.min(95, x));
+                                        setPlayerX(clampedX);
+                                        playerRef.current = clampedX;
+                                    }
+                                }}
+                                onTouchMove={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const touch = e.touches[0];
+                                    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+                                    const clampedX = Math.max(5, Math.min(95, x));
+                                    setPlayerX(clampedX);
+                                    playerRef.current = clampedX;
+                                }}
+                            >
+                                {/* Track Background Accent */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-teal-500/5 to-white/5 pointer-events-none" />
+                                
+                                {/* Dynamic Track Progress (Glow follows player) */}
+                                <div 
+                                    className="absolute inset-y-0 left-0 bg-teal-400/20 blur-xl pointer-events-none transition-all duration-300"
+                                    style={{ width: `${playerX}%` }}
+                                />
+
+                                {/* Center Guideline */}
+                                <div className="absolute inset-y-4 left-1/2 -translate-x-1/2 w-px bg-white/10" />
+                                
+                                {/* Thumb / Handle */}
+                                <div 
+                                    className="absolute w-20 h-14 bg-white/10 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl flex flex-col items-center justify-center transition-all duration-75 group active:scale-95"
+                                    style={{ 
+                                        left: `${playerX}%`, 
+                                        top: '50%',
+                                        transform: 'translate(-50%, -50%)' 
+                                    }}
+                                >
+                                    {/* Teal Glow Pulse when Active */}
+                                    <div className="absolute inset-0 bg-teal-400/20 blur-md rounded-2xl opacity-0 group-active:opacity-100 transition-opacity" />
+                                    
+                                    <div className="flex gap-1.5 z-10">
+                                        <div className="w-1 h-5 bg-white/40 rounded-full" />
+                                        <div className="w-1 h-5 bg-teal-400 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.5)]" />
+                                        <div className="w-1 h-5 bg-white/40 rounded-full" />
+                                    </div>
+                                    <span className="text-[6px] font-black text-white/40 uppercase tracking-[0.2em] mt-1.5">Slide</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
 
