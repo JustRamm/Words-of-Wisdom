@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stickman-rescue-v1';
+const CACHE_NAME = 'words-of-wisdome-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

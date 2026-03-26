@@ -744,7 +744,7 @@ export default function WordsOfHopeScreen({
                             </div>
 
                             <h2 className="text-6xl md:text-9xl font-black text-white mb-2 leading-none uppercase tracking-tighter drop-shadow-2xl">
-                                To The <span className="text-teal-400">Rescue.</span>
+                                Words of <span className="text-teal-400">Wisdome.</span>
                             </h2>
                             
                             {playerData && (

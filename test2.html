@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stickman To The Rescue - Spotlight</title>
+    <title>Words of Wisdome - Spotlight</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Playfair+Display:ital,wght@1,900&display=swap"
@@ -361,7 +361,7 @@
             <div class="flex items-center gap-6 mb-8 -ml-12">
                 <img src="public/stickman_assets/logo.svg" class="w-28 h-28 object-contain -ml-4" alt="Logo">
                 <h1 class="game-heading">
-                    Stickman To <span class="heading-accent">The Rescue</span>
+                    Words of <span class="heading-accent">Wisdome</span>
                 </h1>
             </div>
 
@@ -381,8 +381,8 @@
                 </div>
                 <div class="flex flex-col">
                     <span class="text-white font-black text-xl tracking-tight">SCAN TO PLAY</span>
-                    <span class="text-teal-400/70 text-xs font-bold uppercase tracking-widest">Stickman To The
-                        Rescue</span>
+                    <span class="text-teal-400/70 text-xs font-bold uppercase tracking-widest">Words of
+                        Wisdome</span>
                 </div>
 
             </div>
@@ -415,7 +415,7 @@
                         // but we try to capture them first
                     }).then(function (dataUrl) {
                         const link = document.createElement('a');
-                        link.download = 'Stickman_Rescue_Spotlight.png';
+                        link.download = 'Words_of_Wisdome_Spotlight.png';
                         link.href = dataUrl;
                         link.click();
                         btn.innerHTML = originalText;
@@ -430,7 +430,7 @@
                             skipFontFace: true // Skips remote fonts if they are the problem
                         }).then(function (dataUrl) {
                             const link = document.createElement('a');
-                            link.download = 'Stickman_Rescue_Spotlight_Fallback.png';
+                            link.download = 'Words_of_Wisdome_Spotlight_Fallback.png';
                             link.href = dataUrl;
                             link.click();
                             btn.innerHTML = "EXPORTED (REDUCED)";

@@ -13,10 +13,10 @@ const SplashContent = () => (
         </div>
         <div className="flex flex-col items-center">
             <h2 className="text-4xl md:text-8xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-2xl">
-                Stickman <span className="text-white/60">To The</span>
+                Words <span className="text-white/60">of</span>
             </h2>
             <h2 className="text-6xl md:text-9xl font-black text-teal-400 leading-[0.8] uppercase tracking-tighter drop-shadow-2xl mb-4">
-                Rescue.
+                Wisdome.
             </h2>
         </div>
         <div className="h-1.5 w-64 bg-white/10 rounded-full mt-8 overflow-hidden border border-white/5 mx-auto">
@@ -59,7 +59,7 @@ export default function App() {
     };
 
     const handleExit = () => {
-        if (confirm("Reset the path of rescue?")) {
+        if (confirm("Reset the path of Wisdome?")) {
             setScreen('SPLASH');
         }
     };

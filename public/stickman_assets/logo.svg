@@ -1,22 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <g transform="scale(0.85)" transform-origin="center">
-    <!-- Circular Background - Filled with Solid White -->
-    <circle cx="256" cy="256" r="240" fill="#ffffff" stroke="#0d9488" stroke-width="20"/>
+  <g transform="scale(0.9)" transform-origin="center">
+    <!-- Circular Background -->
+    <circle cx="256" cy="256" r="240" fill="#ffffff" stroke="#14b8a6" stroke-width="24"/>
     
-    <!-- Minimal Stickman (The Helper) -->
-    <circle cx="256" cy="180" r="45" stroke="#0f172a" stroke-width="24" fill="none"/>
-    <path d="M256,225 L256,380" stroke="#0f172a" stroke-width="24" stroke-linecap="round"/>
+    <!-- Large Scholar Stickman Head -->
+    <circle cx="256" cy="265" r="85" stroke="#0f172a" stroke-width="26" fill="none"/>
     
-    <!-- Arms reaching out (Welcoming/Hugging pose) -->
-    <path d="M180,280 Q256,320 332,280" stroke="#0f172a" stroke-width="24" stroke-linecap="round" fill="none"/>
-    
-    <!-- Legs -->
-    <path d="M256,380 L200,480" stroke="#0f172a" stroke-width="24" stroke-linecap="round"/>
-    <path d="M256,380 L312,480" stroke="#0f172a" stroke-width="24" stroke-linecap="round"/>
+    <!-- Face -->
+    <circle cx="226" cy="260" r="7" fill="#0f172a"/>
+    <circle cx="286" cy="260" r="7" fill="#0f172a"/>
+    <path d="M226 290 Q256 310 286 290" stroke="#0f172a" stroke-width="6" stroke-linecap="round" fill="none"/>
 
-    <!-- Helping Hand Accent (Teal Heart/Star) -->
-    <path d="M350,150 L360,130 L380,130 L390,150 L370,170 Z" fill="#0d9488" opacity="0.8">
-      <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2s" repeatCount="indefinite"/>
-    </path>
+    <!-- Mortarboard Hat -->
+    <path d="M140 160 L256 100 L372 160 L256 220 Z" fill="#0f172a" stroke="#0f172a" stroke-width="5" stroke-linejoin="round"/>
+    
+    <!-- Tassel -->
+    <path d="M372 160 L372 230" stroke="#F59E0B" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="372" cy="245" r="10" fill="#F59E0B"/>
+
+    <!-- The Theme-Colored Heart (Static) -->
+    <path d="M410 330 C410 315 390 315 380 325 C370 315 350 315 350 330 C350 350 380 370 380 370 C380 370 410 350 410 330 Z" fill="#14b8a6"/>
+    
+    <!-- Wisdome Sparkle -->
+    <circle cx="120" cy="380" r="8" fill="#14b8a6" opacity="0.6"/>
   </g>
 </svg>
