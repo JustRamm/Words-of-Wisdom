@@ -90,7 +90,7 @@ const PlayerRegistrationScreen = ({ onComplete }) => {
                 {/* Branding at the top */}
                 <div className="flex flex-col items-center mb-6">
                     <div className="w-20 h-20 bg-white/10 backdrop-blur-3xl rounded-[2rem] mb-6 flex items-center justify-center border border-white/20 shadow-2xl overflow-hidden -rotate-6 transform hover:rotate-0 transition-all duration-700">
-                        <img src="/stickman_assets/logo.svg" alt="Words of Hope" className="w-12 h-12 object-contain" />
+                        <img src="/stickman_assets/logo.svg" alt="Stickman To The Rescue" className="w-12 h-12 object-contain" />
                     </div>
                     <h1 className="text-4xl font-black text-white uppercase tracking-tighter text-center leading-none">
                         Player <span className="text-teal-400">Profile</span>

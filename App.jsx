@@ -9,14 +9,14 @@ import './index.css';
 const SplashContent = () => (
     <div className="relative z-10 flex flex-col items-center justify-center h-full animate-fade-in text-center px-6">
         <div className="w-44 h-44 bg-white/5 backdrop-blur-3xl rounded-[3rem] mb-12 flex items-center justify-center border border-white/20 shadow-2xl -rotate-6 transform hover:rotate-0 transition-transform duration-700">
-            <img src="/stickman_assets/logo.svg" alt="Hope" className="w-24 h-24 animate-pulse" />
+            <img src="/stickman_assets/logo.svg" alt="Stickman" className="w-24 h-24 animate-pulse" />
         </div>
         <div className="flex flex-col items-center">
             <h2 className="text-5xl md:text-8xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-2xl">
-                Words <span className="text-white/60">of</span>
+                Stickman <span className="text-white/60">To The</span>
             </h2>
             <h2 className="text-7xl md:text-9xl font-black text-teal-400 leading-[0.8] uppercase tracking-tighter drop-shadow-2xl mb-4">
-                Wisdom.
+                Rescue.
             </h2>
         </div>
         <div className="h-1.5 w-64 bg-white/10 rounded-full mt-8 overflow-hidden border border-white/5 mx-auto">
@@ -59,7 +59,7 @@ export default function App() {
     };
 
     const handleExit = () => {
-        if (confirm("Reset the path of wisdom?")) {
+        if (confirm("Reset the path of rescue?")) {
             setScreen('SPLASH');
         }
     };

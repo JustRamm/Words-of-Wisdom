@@ -1,5 +1,5 @@
 export const TERMINOLOGY_DATA = {
-    title: "Words of Hope",
+    title: "Stickman To The Rescue",
     intro: "The language we use can either build a bridge to safety or a wall of stigma. Let's learn to use People-First language.",
     questions: [
         {

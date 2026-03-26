@@ -35,7 +35,7 @@ export default function WordsOfHopeScreen({
     const [isSpeedBoosted, setIsSpeedBoosted] = useState(false);
     const isFirstSpawnRef = useRef(true);
     const [unlockedLevel, setUnlockedLevel] = useState(() => {
-        const saved = localStorage.getItem('words_of_hope_unlocked_level');
+        const saved = localStorage.getItem('stickman_rescue_unlocked_level');
         return saved ? parseInt(saved) : 1; 
     });
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -395,10 +395,10 @@ export default function WordsOfHopeScreen({
             // Unlock next level logic
             if (difficulty === 'EASY' && unlockedLevel < 2) {
                 setUnlockedLevel(2);
-                localStorage.setItem('words_of_hope_unlocked_level', '2');
+                localStorage.setItem('stickman_rescue_unlocked_level', '2');
             } else if (difficulty === 'NORMAL' && unlockedLevel < 3) {
                 setUnlockedLevel(3);
-                localStorage.setItem('words_of_hope_unlocked_level', '3');
+                localStorage.setItem('stickman_rescue_unlocked_level', '3');
             }
             triggerEndGame('RESULTS');
         }
@@ -452,7 +452,7 @@ export default function WordsOfHopeScreen({
     return (
         <div
             ref={gameContainerRef}
-            className="fixed inset-0 z-[1000] flex flex-col items-center justify-center overflow-hidden font-sans select-none touch-none words-of-hope-container"
+            className="fixed inset-0 z-[1000] flex flex-col items-center justify-center overflow-hidden font-sans select-none touch-none stickman-rescue-container"
             style={bgStyle}
             onPointerDown={handlePointerMove}
             onPointerMove={handlePointerMove}
@@ -463,16 +463,16 @@ export default function WordsOfHopeScreen({
 
             {/* Fixed Header (Gameplay only) */}
             {!['INTRO', 'LEVEL_SELECT', 'TUTORIAL'].includes(gameState) && (
-                <div className="absolute top-4 md:top-8 left-0 right-0 px-4 md:px-8 flex justify-between items-center z-50 words-of-hope-hdr">
+                <div className="absolute top-4 md:top-8 left-0 right-0 px-4 md:px-8 flex justify-between items-center z-50 stickman-rescue-hdr">
                     {/* Hide Title on Mobile */}
-                    <div className="hidden md:flex flex-col words-of-hope-hdr-title">
+                    <div className="hidden md:flex flex-col stickman-rescue-hdr-title">
                         <h1 className="text-white font-black uppercase tracking-[0.3em] text-lg drop-shadow-lg leading-tight">
                             {TERMINOLOGY_DATA.title}
                         </h1>
                         <div className="h-0.5 w-full bg-gradient-to-r from-teal-400 to-transparent rounded-full mt-1" />
                     </div>
 
-                    <div className="flex items-center gap-2 md:gap-4 words-of-hope-hdr-actions w-full md:w-auto justify-between md:justify-end">
+                    <div className="flex items-center gap-2 md:gap-4 stickman-rescue-hdr-actions w-full md:w-auto justify-between md:justify-end">
                         {/* Streak Counter */}
                         {gameState === 'PLAYING' && (
                             <div className="flex flex-col items-center bg-white/10 backdrop-blur-md border border-white/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl">
@@ -544,7 +544,7 @@ export default function WordsOfHopeScreen({
                                 onClick={onExit}
                                 className="hidden md:block bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
                             >
-                                Exit Path
+                                Exit Mission
                             </button>
                         )}
 
@@ -578,7 +578,7 @@ export default function WordsOfHopeScreen({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tighter">Path Paused</h2>
+                        <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tighter">Mission Paused</h2>
                         <p className="text-slate-500 font-medium mb-8">Take a moment to breathe. The path will wait for you.</p>
                         
                         <div className="space-y-3">
@@ -586,7 +586,7 @@ export default function WordsOfHopeScreen({
                                 onClick={togglePause} 
                                 className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-teal-400 transition-all"
                             >
-                                Resume Journey
+                                Resume Mission
                             </button>
                             <button 
                                 onClick={onExit} 
@@ -600,7 +600,7 @@ export default function WordsOfHopeScreen({
             )}
 
             {gameState === 'LEVEL_SELECT' && (
-                <div className="relative z-10 max-w-6xl w-full p-6 md:p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-level-select">
+                <div className="relative z-10 max-w-6xl w-full p-6 md:p-8 text-center animate-fade-in flex flex-col items-center stickman-rescue-level-select">
                     {/* Fixed Back Button in true corner */}
                     <button
                         onClick={() => { audioManager.playPop(); onExit(); }}
@@ -610,7 +610,7 @@ export default function WordsOfHopeScreen({
                         Back
                     </button>
 
-                    <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-12">Choose Your Path</h2>
+                    <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-12">Choose Your Mission</h2>
                               <div className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 w-full overflow-x-auto md:overflow-visible pb-8 md:pb-0 px-4 md:px-0 snap-x snap-mandatory scrollbar-hide">
                         {/* Easy Mode */}
                         <div 
@@ -688,7 +688,7 @@ export default function WordsOfHopeScreen({
                         </div>
                     </div>
 
-                    <div className="relative z-10 max-w-4xl w-full h-full p-8 text-center animate-fade-in flex flex-col items-center justify-center words-of-hope-hero overflow-hidden">
+                    <div className="relative z-10 max-w-4xl w-full h-full p-8 text-center animate-fade-in flex flex-col items-center justify-center stickman-rescue-hero overflow-hidden">
                         {/* MAIN HERO CONTENT (CENTRED) */}
                         <div className="flex flex-col items-center animate-scale-in">
                             <div className="w-40 h-40 bg-white/5 backdrop-blur-3xl rounded-[3rem] mb-12 flex items-center justify-center border border-white/20 shadow-[0_30px_60px_rgba(0,0,0,0.5)] -rotate-6 transform hover:rotate-0 transition-all duration-700">
@@ -696,7 +696,7 @@ export default function WordsOfHopeScreen({
                             </div>
 
                             <h2 className="text-6xl md:text-9xl font-black text-white mb-2 leading-none uppercase tracking-tighter drop-shadow-2xl">
-                                Word <span className="text-teal-400">Wisdom.</span>
+                                To The <span className="text-teal-400">Rescue.</span>
                             </h2>
                             
                             {playerData && (
@@ -725,7 +725,7 @@ export default function WordsOfHopeScreen({
             )}
 
             {gameState === 'TUTORIAL' && (
-                <div className="relative z-10 max-w-2xl w-full p-6 md:p-8 text-center animate-fade-in flex flex-col items-center words-of-hope-tutorial">
+                <div className="relative z-10 max-w-2xl w-full p-6 md:p-8 text-center animate-fade-in flex flex-col items-center stickman-rescue-tutorial">
                     {/* Fixed Back Button in true corner */}
                     <button
                         onClick={() => { audioManager.playPop(); setGameState('LEVEL_SELECT'); }}
@@ -778,7 +778,7 @@ export default function WordsOfHopeScreen({
                                 <span className="text-white/60 font-bold uppercase tracking-widest text-[10px]">Victory</span>
                             </div>
                             <p className="text-slate-300 text-sm leading-relaxed">
-                                Collect 4 Seeds of Hope to master the path and complete the lesson.
+                                Collect 4 Seeds of Support to master the mission and complete the lesson.
                             </p>
                         </div>
                     </div>
@@ -787,7 +787,7 @@ export default function WordsOfHopeScreen({
                         onClick={startGame}
                         className="w-full md:w-auto px-12 py-4 md:py-5 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest text-base md:text-lg shadow-2xl hover:bg-teal-400 transition-all hover:-translate-y-1 active:scale-95 border-b-4 border-teal-700"
                     >
-                        Start Your Path
+                        Start Mission
                     </button>
                 </div>
             )}
@@ -829,7 +829,7 @@ export default function WordsOfHopeScreen({
                     </div>
 
                     {/* Knowledge Sidebar */}
-                    <div className={`absolute right-4 top-32 z-40 transition-all duration-700 words-of-hope-sidebar-right ${isSidebarVisible ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0'}`}>
+                    <div className={`absolute right-4 top-32 z-40 transition-all duration-700 stickman-rescue-sidebar-right ${isSidebarVisible ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0'}`}>
                         <div className="max-w-[240px] md:max-w-[320px] bg-white/95 rounded-2xl border border-white p-4 md:p-6 shadow-4xl flex flex-col h-fit"
                             style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
                             <div className="flex items-center gap-2 mb-4">
@@ -859,7 +859,7 @@ export default function WordsOfHopeScreen({
                     </div>
 
                     {/* Stigma Alert (Left Side) */}
-                    <div className={`absolute left-4 top-40 z-40 transition-all duration-700 words-of-hope-sidebar-left ${isAlertVisible ? 'translate-x-0 opacity-100' : 'translate-x-[-120%] opacity-0'}`}>
+                    <div className={`absolute left-4 top-40 z-40 transition-all duration-700 stickman-rescue-sidebar-left ${isAlertVisible ? 'translate-x-0 opacity-100' : 'translate-x-[-120%] opacity-0'}`}>
                         <div className="max-w-[240px] md:max-w-[320px] bg-slate-900/95 rounded-2xl border border-red-500/30 p-4 md:p-6 shadow-[0_0_30px_rgba(239,68,68,0.2)] flex flex-col h-fit"
                             style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
                             <div className="flex items-center gap-2 mb-4">
@@ -1079,7 +1079,7 @@ export default function WordsOfHopeScreen({
             )}
 
             {gameState === 'GAME_OVER' && (
-                <div className="relative z-10 max-w-xl w-full p-8 text-center animate-pop-in flex flex-col items-center words-of-hope-results">
+                <div className="relative z-10 max-w-xl w-full p-8 text-center animate-pop-in flex flex-col items-center stickman-rescue-results">
                     <div className="w-32 h-32 bg-teal-500 rounded-[2.5rem] mb-8 flex items-center justify-center p-6 shadow-2xl border-4 border-white">
                         <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" />
@@ -1099,7 +1099,7 @@ export default function WordsOfHopeScreen({
                             </div>
                         )}
                     </div>
-                    <div className="flex flex-col gap-4 w-full words-of-hope-retry-btns">
+                    <div className="flex flex-col gap-4 w-full stickman-rescue-retry-btns">
                         <button onClick={startGame} className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black uppercase tracking-widest text-lg shadow-xl hover:bg-slate-100 transition-all">Try Again</button>
                         <button onClick={onExit} className="w-full py-5 bg-white/10 text-white border border-white/20 rounded-2xl font-black uppercase tracking-widest text-xs transition-all opacity-50">Return</button>
                     </div>
@@ -1107,11 +1107,11 @@ export default function WordsOfHopeScreen({
             )}
 
             {gameState === 'RESULTS' && (
-                <div className="relative z-10 max-w-xl w-full p-8 text-center animate-pop-in flex flex-col items-center words-of-hope-results">
+                <div className="relative z-10 max-w-xl w-full p-8 text-center animate-pop-in flex flex-col items-center stickman-rescue-results">
                     <div className="w-32 h-32 bg-teal-400 rounded-[2.5rem] mb-8 flex items-center justify-center shadow-2xl border-4 border-white overflow-hidden">
                         <img src="/stickman_assets/hope_stickman.svg" alt="Success" className="w-20 h-20 drop-shadow-lg" />
                     </div>
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">Wisdom Path</h2>
+                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">Rescue Mission</h2>
                     <div className="flex gap-6 mb-4">
                         <div className="flex flex-col items-center">
                             <p className="text-teal-200 text-sm font-bold uppercase tracking-widest">Final Score</p>
@@ -1124,7 +1124,7 @@ export default function WordsOfHopeScreen({
                             </div>
                         )}
                     </div>
-                    <p className="text-white/50 text-[10px] font-black uppercase tracking-widest mb-12 italic">Seeds of Wisdom Rooted</p>
+                    <p className="text-white/50 text-[10px] font-black uppercase tracking-widest mb-12 italic">Lives Saved</p>
                     <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 mb-12 border border-white/20">
                         <p className="text-white text-lg font-medium leading-relaxed italic">"You have successfully navigated the language of stigma. Choosing the right words is the first step in saving a life."</p>
                     </div>
