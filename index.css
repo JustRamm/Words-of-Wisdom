@@ -59,6 +59,8 @@ body,
   padding: 0;
   overflow: hidden;
   background-color: #000;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Global Safari Backdrop Filter Fix */
@@ -295,19 +297,27 @@ input {
 .resource-wallet {
   position: absolute;
   top: 0;
-  right: -450px;
-  width: 420px;
+  right: -100%;
+  width: 100%;
+  max-width: 420px;
   height: 100%;
   background: rgba(255, 255, 255, 0.95);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  padding: 2rem;
+  padding: 1.5rem;
   transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 150;
+  z-index: 1500;
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
   border-left: 1px solid rgba(255, 255, 255, 0.5);
   display: flex;
   flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .resource-wallet {
+    padding: 2rem;
+    right: -450px;
+  }
 }
 
 .resource-wallet.open {

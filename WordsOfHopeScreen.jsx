@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { TERMINOLOGY_DATA } from './terminologyData';
 import GameBackground from './GameBackground';
+import { supabase } from './supabaseClient';
 
 export default function WordsOfHopeScreen({ 
     audioManager, 
@@ -29,15 +30,13 @@ export default function WordsOfHopeScreen({
     const [baseSpeed, setBaseSpeed] = useState(0.05); 
     const [isHistoryOpen, setIsHistoryOpen] = useState(false); 
     const [level, setLevel] = useState(1); 
-    const [difficulty, setDifficulty] = useState('NORMAL'); 
+    const [difficulty, setDifficulty] = useState('EASY'); // EASY, NORMAL, HARD
+    const [review, setReview] = useState({ rating: 0, comment: '', submitted: false, loading: false });
     const [localPaused, setLocalPaused] = useState(false); 
     const [tipsRemaining, setTipsRemaining] = useState(2); 
     const [isSpeedBoosted, setIsSpeedBoosted] = useState(false);
     const isFirstSpawnRef = useRef(true);
-    const [unlockedLevel, setUnlockedLevel] = useState(() => {
-        const saved = localStorage.getItem('stickman_rescue_unlocked_level');
-        return saved ? parseInt(saved) : 1; 
-    });
+    const [unlockedLevel, setUnlockedLevel] = useState(1);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     useEffect(() => {
@@ -392,14 +391,6 @@ export default function WordsOfHopeScreen({
 
         // Win state check - Final win at higher score (e.g. 12 seeds or all questions)
         if (scoreRef.current >= 12) {
-            // Unlock next level logic
-            if (difficulty === 'EASY' && unlockedLevel < 2) {
-                setUnlockedLevel(2);
-                localStorage.setItem('stickman_rescue_unlocked_level', '2');
-            } else if (difficulty === 'NORMAL' && unlockedLevel < 3) {
-                setUnlockedLevel(3);
-                localStorage.setItem('stickman_rescue_unlocked_level', '3');
-            }
             triggerEndGame('RESULTS');
         }
     };
@@ -417,11 +408,45 @@ export default function WordsOfHopeScreen({
         }, 1000);
     };
 
+    const saveGameResult = async (finalState) => {
+        if (!playerData?.id) return;
+        
+        const finalScore = scoreRef.current;
+        const finalHarmony = harmony;
+        const finalMistakes = mistakesRef.current;
+        const missedTerms = wordHistory
+            .filter(w => !w.wasCorrect)
+            .map(w => ({ id: w.id, stigma: w.stigma, correct: w.correct }));
+
+        try {
+            const { error } = await supabase
+                .from('players')
+                .update({
+                    final_score: finalScore,
+                    final_harmony: finalHarmony,
+                    mistakes_count: finalMistakes,
+                    mistakes_list: missedTerms,
+                    max_streak: maxStreak,
+                    difficulty_played: difficulty,
+                    completed_at: new Date().toISOString(),
+                    status: finalState === 'RESULTS' ? 'COMPLETED' : 'FAILED'
+                })
+                .eq('id', playerData.id);
+
+            if (error) console.error("Performance saving error:", error.message);
+        } catch (err) {
+            console.error("Unexpected error saving performance:", err);
+        }
+    };
+
     const triggerEndGame = (finalState) => {
         setGameState('TRANSITIONING');
         fallingItemsRef.current = [];
         setFallingItems([]);
         isProcessingSetRef.current = false;
+
+        // Auto-save performance before switching screens
+        saveGameResult(finalState);
 
         setTimeout(() => {
             setGameState(finalState);
@@ -441,6 +466,30 @@ export default function WordsOfHopeScreen({
     };
 
     // Simplified endGame trigger handled in update loop and processCollision
+
+    const handleReviewSubmit = async () => {
+        if (!review.rating || !playerData?.id) {
+            console.error("Missing rating or player ID");
+            return;
+        }
+        setReview(prev => ({ ...prev, loading: true }));
+        try {
+            const { error } = await supabase
+                .from('players')
+                .update({ 
+                    review_rating: review.rating, 
+                    review_comment: review.comment 
+                })
+                .eq('id', playerData.id);
+            if (error) throw error;
+            setReview(prev => ({ ...prev, submitted: true }));
+            if (audioManager) audioManager.playPop();
+        } catch (err) {
+            console.error("Error submitting review:", err.message);
+        } finally {
+            setReview(prev => ({ ...prev, loading: false }));
+        }
+    };
 
     const bgStyle = {
         background: `linear-gradient(135deg, 
@@ -483,8 +532,8 @@ export default function WordsOfHopeScreen({
                         )}
 
                         <div className="flex flex-col items-end">
-                            <span className="text-[7px] md:text-[8px] font-black text-teal-400 uppercase tracking-widest leading-none mb-0.5 md:mb-1">Lvl {level} (Target {level * 4})</span>
-                            <span className="text-white font-black text-base md:text-xl leading-none">{score}<span className="text-white/30 text-xs md:text-sm font-medium ml-0.5 md:ml-1">/ 12</span></span>
+                            <span className="text-[7px] md:text-[8px] font-black text-teal-400 uppercase tracking-widest leading-none mb-0.5 md:mb-1">Lvl {level}</span>
+                            <span className="text-white font-black text-sm md:text-xl leading-none">{score}<span className="text-white/30 text-[10px] md:text-sm font-medium ml-0.5 md:ml-1">/ 12</span></span>
                         </div>
 
                         {/* Explanation Mode Toggle */}
@@ -516,10 +565,9 @@ export default function WordsOfHopeScreen({
                         {gameState === 'PLAYING' && wordHistory.length > 0 && (
                             <button
                                 onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-2.5 md:px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
                             >
-                                <span className="md:hidden">📚 {wordHistory.length}</span>
-                                <span className="hidden md:inline">📚 History ({wordHistory.length})</span>
+                                📚 <span className="hidden md:inline">History </span>({wordHistory.length})
                             </button>
                         )}
 
@@ -611,18 +659,18 @@ export default function WordsOfHopeScreen({
                     </button>
 
                     <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-12">Choose Your Mission</h2>
-                              <div className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 w-full overflow-x-auto md:overflow-visible pb-8 md:pb-0 px-4 md:px-0 snap-x snap-mandatory scrollbar-hide">
+                    <div className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 w-full overflow-x-auto md:overflow-visible pb-8 md:pb-0 px-4 md:px-0 snap-x snap-mandatory scrollbar-hide">
                         {/* Easy Mode */}
                         <div 
                             onClick={() => { setDifficulty('EASY'); setGameState('TUTORIAL'); audioManager.playPop(); }}
-                            className="flex-shrink-0 w-[280px] md:w-auto snap-center bg-white/5 border-2 border-white/10 hover:border-teal-400 p-8 rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
+                            className="flex-shrink-0 w-[240px] xs:w-[280px] md:w-auto snap-center bg-white/5 border-2 border-white/10 hover:border-teal-400 p-6 md:p-8 rounded-3xl md:rounded-[3rem] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center group shadow-2xl"
                         >
-                            <div className="w-20 h-20 bg-teal-400/20 rounded-full mb-6 flex items-center justify-center group-hover:bg-teal-400/40 transition-colors">
-                                <span className="text-4xl text-teal-400">🍃</span>
+                            <div className="w-16 h-16 md:w-20 md:h-20 bg-teal-400/20 rounded-full mb-4 md:mb-6 flex items-center justify-center group-hover:bg-teal-400/40 transition-colors">
+                                <span className="text-3xl md:text-4xl text-teal-400">🍃</span>
                             </div>
-                            <h3 className="text-2xl font-black text-white mb-2 uppercase">Breeze</h3>
-                            <p className="text-slate-400 text-sm font-medium leading-relaxed">Slower words. Focused on learning the terminology at your own pace.</p>
-                            <div className="mt-8 px-6 py-2 bg-white/10 rounded-full text-[10px] font-black text-teal-400 uppercase tracking-widest">Focus: Learning</div>
+                            <h3 className="text-xl md:text-2xl font-black text-white mb-2 uppercase">Breeze</h3>
+                            <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed">Slower words. Focused on learning the terminology at your own pace.</p>
+                            <div className="mt-6 md:mt-8 px-5 md:px-6 py-2 bg-white/10 rounded-full text-[9px] md:text-[10px] font-black text-teal-400 uppercase tracking-widest">Focus: Learning</div>
                         </div>
  
                         {/* Normal Mode */}
@@ -634,20 +682,20 @@ export default function WordsOfHopeScreen({
                                     audioManager.playSad();
                                 }
                             }}
-                            className={`flex-shrink-0 w-[280px] md:w-auto snap-center p-10 rounded-[3rem] backdrop-blur-xl transition-all flex flex-col items-center group shadow-4xl relative overflow-hidden ${unlockedLevel >= 2 
+                            className={`flex-shrink-0 w-[240px] xs:w-[280px] md:w-auto snap-center p-8 md:p-10 rounded-3xl md:rounded-[3rem] backdrop-blur-xl transition-all flex flex-col items-center group shadow-4xl relative overflow-hidden ${unlockedLevel >= 2 
                                 ? 'bg-white/10 border-2 border-teal-500 hover:scale-110 active:scale-95 cursor-pointer' 
                                 : 'bg-slate-900/40 border-2 border-white/5 grayscale opacity-60 cursor-not-allowed'}`}
                         >
-                            {unlockedLevel >= 2 && <div className="absolute top-0 right-0 px-4 py-1 bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest rounded-bl-xl shadow-lg">Recommended</div>}
-                            <div className={`w-24 h-24 rounded-full mb-6 flex items-center justify-center transition-colors ${unlockedLevel >= 2 ? 'bg-white/20 group-hover:bg-white/30' : 'bg-slate-800'}`}>
-                                <span className="text-5xl">{unlockedLevel >= 2 ? '🌿' : '🔒'}</span>
+                            {unlockedLevel >= 2 && <div className="absolute top-0 right-0 px-3 md:px-4 py-1 bg-teal-500 text-white text-[7px] md:text-[8px] font-black uppercase tracking-widest rounded-bl-xl shadow-lg">Recommended</div>}
+                            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full mb-4 md:mb-6 flex items-center justify-center transition-colors ${unlockedLevel >= 2 ? 'bg-white/20 group-hover:bg-white/30' : 'bg-slate-800'}`}>
+                                <span className="text-4xl md:text-5xl">{unlockedLevel >= 2 ? '🌿' : '🔒'}</span>
                             </div>
-                            <h3 className="text-3xl font-black text-white mb-2 uppercase">Mist</h3>
-                            <p className="text-slate-300 text-sm font-medium leading-relaxed">Standard speed. Balanced challenge for terminology mastery.</p>
+                            <h3 className="text-2xl md:text-3xl font-black text-white mb-2 uppercase">Mist</h3>
+                            <p className="text-slate-300 text-xs md:text-sm font-medium leading-relaxed">Standard speed. Balanced challenge for terminology mastery.</p>
                             {unlockedLevel >= 2 ? (
-                                <div className="mt-8 px-8 py-3 bg-teal-500 rounded-full text-[10px] font-black text-white uppercase tracking-widest shadow-xl">Focus: Mastery</div>
+                                <div className="mt-6 md:mt-8 px-6 md:px-8 py-2.5 md:py-3 bg-teal-500 rounded-full text-[9px] md:text-[10px] font-black text-white uppercase tracking-widest shadow-xl">Focus: Mastery</div>
                             ) : (
-                                <div className="mt-8 px-6 py-2 bg-white/5 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest">Complete Breeze to Unlock</div>
+                                <div className="mt-6 md:mt-8 px-5 md:px-6 py-2 bg-white/5 rounded-full text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Complete Breeze to Unlock</div>
                             )}
                         </div>
  
@@ -660,19 +708,19 @@ export default function WordsOfHopeScreen({
                                     audioManager.playSad();
                                 }
                             }}
-                            className={`flex-shrink-0 w-[280px] md:w-auto snap-center p-8 rounded-[3rem] backdrop-blur-xl transition-all flex flex-col items-center group shadow-2xl ${unlockedLevel >= 3 
+                            className={`flex-shrink-0 w-[240px] xs:w-[280px] md:w-auto snap-center p-6 md:p-8 rounded-3xl md:rounded-[3rem] backdrop-blur-xl transition-all flex flex-col items-center group shadow-2xl ${unlockedLevel >= 3 
                                 ? 'bg-white/5 border-2 border-white/10 hover:border-orange-500 hover:scale-105 active:scale-95 cursor-pointer' 
                                 : 'bg-slate-900/40 border-2 border-white/5 grayscale opacity-60 cursor-not-allowed'}`}
                         >
-                            <div className={`w-20 h-20 rounded-full mb-6 flex items-center justify-center transition-colors ${unlockedLevel >= 3 ? 'bg-orange-500/20 group-hover:bg-orange-500/40' : 'bg-slate-800'}`}>
-                                <span className="text-4xl">{unlockedLevel >= 3 ? '⛈️' : '🔒'}</span>
+                            <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full mb-4 md:mb-6 flex items-center justify-center transition-colors ${unlockedLevel >= 3 ? 'bg-orange-500/20 group-hover:bg-orange-500/40' : 'bg-slate-800'}`}>
+                                <span className="text-3xl md:text-4xl">{unlockedLevel >= 3 ? '⛈️' : '🔒'}</span>
                             </div>
-                            <h3 className="text-2xl font-black text-white mb-2 uppercase">Storm</h3>
-                            <p className="text-slate-400 text-sm font-medium leading-relaxed">Rapid words. Test your reflexes and quick thinking for higher stakes.</p>
+                            <h3 className="text-xl md:text-2xl font-black text-white mb-2 uppercase">Storm</h3>
+                            <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed">Rapid words. Test your reflexes and quick thinking for higher stakes.</p>
                             {unlockedLevel >= 3 ? (
-                                <div className="mt-8 px-6 py-2 bg-white/10 rounded-full text-[10px] font-black text-orange-400 uppercase tracking-widest">Focus: Reflexes</div>
+                                <div className="mt-6 md:mt-8 px-5 md:px-6 py-2 bg-white/10 rounded-full text-[9px] md:text-[10px] font-black text-orange-400 uppercase tracking-widest">Focus: Reflexes</div>
                             ) : (
-                                <div className="mt-8 px-6 py-2 bg-white/5 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest">Complete Mist to Unlock</div>
+                                <div className="mt-6 md:mt-8 px-5 md:px-6 py-2 bg-white/5 rounded-full text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Complete Mist to Unlock</div>
                             )}
                         </div>
                     </div>
@@ -735,49 +783,49 @@ export default function WordsOfHopeScreen({
                         Back
                     </button>
 
-                    <div className="w-20 h-20 md:w-24 md:h-24 bg-teal-500/20 backdrop-blur-xl rounded-2xl mb-6 flex items-center justify-center border border-teal-400/30">
-                        <img src="/stickman_assets/hope_stickman.svg" alt="Tutor" className="w-16 h-16 animate-bounce-subtle" />
+                    <div className="w-16 h-16 md:w-24 md:h-24 bg-teal-500/20 backdrop-blur-xl rounded-2xl mb-4 md:mb-6 flex items-center justify-center border border-teal-400/30">
+                        <img src="/stickman_assets/hope_stickman.svg" alt="Tutor" className="w-12 h-12 md:w-16 md:h-16 animate-bounce-subtle" />
                     </div>
 
-                    <h2 className="text-2xl md:text-5xl font-black text-white mb-6 md:mb-8 uppercase tracking-tighter">Your Mission</h2>
+                    <h2 className="text-2xl md:text-5xl font-black text-white mb-4 md:mb-8 uppercase tracking-tighter">Your Mission</h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 w-full text-left">
-                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center font-black text-white">1</div>
-                                <span className="text-teal-400 font-bold uppercase tracking-widest text-[10px]">Movement</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8 md:mb-12 w-full text-left max-h-[40vh] md:max-h-none overflow-y-auto md:overflow-visible pr-2 custom-scrollbar">
+                        <div className="bg-white/5 border border-white/10 p-4 md:p-5 rounded-xl md:rounded-2xl backdrop-blur-md">
+                            <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                                <div className="w-6 h-6 md:w-8 md:h-8 bg-teal-500 rounded-lg flex items-center justify-center font-black text-white text-xs md:text-base">1</div>
+                                <span className="text-teal-400 font-bold uppercase tracking-widest text-[8px] md:text-[10px]">Movement</span>
                             </div>
-                            <p className="text-slate-300 text-sm leading-relaxed">
+                            <p className="text-slate-300 text-xs md:text-sm leading-relaxed">
                                 Move your cursor or touch to slide your character left and right.
                             </p>
                         </div>
 
-                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center font-black text-white">2</div>
-                                <span className="text-orange-400 font-bold uppercase tracking-widest text-[10px]">Objective</span>
+                        <div className="bg-white/5 border border-white/10 p-4 md:p-5 rounded-xl md:rounded-2xl backdrop-blur-md">
+                            <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                                <div className="w-6 h-6 md:w-8 md:h-8 bg-orange-500 rounded-lg flex items-center justify-center font-black text-white text-xs md:text-base">2</div>
+                                <span className="text-orange-400 font-bold uppercase tracking-widest text-[8px] md:text-[10px]">Objective</span>
                             </div>
-                            <p className="text-slate-300 text-sm leading-relaxed">
+                            <p className="text-slate-300 text-xs md:text-sm leading-relaxed">
                                 Catch the <span className="text-white font-bold underline decoration-teal-500">Seeds of Hope</span>. Let the harmful words pass.
                             </p>
                         </div>
 
-                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center font-black text-white">3</div>
-                                <span className="text-red-400 font-bold uppercase tracking-widest text-[10px]">Warning</span>
+                        <div className="bg-white/5 border border-white/10 p-4 md:p-5 rounded-xl md:rounded-2xl backdrop-blur-md">
+                            <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                                <div className="w-6 h-6 md:w-8 md:h-8 bg-red-500 rounded-lg flex items-center justify-center font-black text-white text-xs md:text-base">3</div>
+                                <span className="text-red-400 font-bold uppercase tracking-widest text-[8px] md:text-[10px]">Warning</span>
                             </div>
-                            <p className="text-slate-300 text-sm leading-relaxed">
+                            <p className="text-slate-300 text-xs md:text-sm leading-relaxed">
                                 You have 3 lives. Missing a Seed of Hope or catching a harmful word will cost a life.
                             </p>
                         </div>
 
-                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-black text-white">4</div>
-                                <span className="text-white/60 font-bold uppercase tracking-widest text-[10px]">Victory</span>
+                        <div className="bg-white/5 border border-white/10 p-4 md:p-5 rounded-xl md:rounded-2xl backdrop-blur-md">
+                            <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                                <div className="w-6 h-6 md:w-8 md:h-8 bg-white/20 rounded-lg flex items-center justify-center font-black text-white text-xs md:text-base">4</div>
+                                <span className="text-white/60 font-bold uppercase tracking-widest text-[8px] md:text-[10px]">Victory</span>
                             </div>
-                            <p className="text-slate-300 text-sm leading-relaxed">
+                            <p className="text-slate-300 text-xs md:text-sm leading-relaxed">
                                 Collect 4 Seeds of Support to master the mission and complete the lesson.
                             </p>
                         </div>
@@ -785,7 +833,7 @@ export default function WordsOfHopeScreen({
  
                     <button
                         onClick={startGame}
-                        className="w-full md:w-auto px-12 py-4 md:py-5 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest text-base md:text-lg shadow-2xl hover:bg-teal-400 transition-all hover:-translate-y-1 active:scale-95 border-b-4 border-teal-700"
+                        className="w-full md:w-auto mt-6 md:mt-10 px-12 py-4 md:py-5 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest text-base md:text-lg shadow-2xl hover:bg-teal-400 transition-all hover:-translate-y-1 active:scale-95 border-b-4 border-teal-700"
                     >
                         Start Mission
                     </button>
@@ -806,7 +854,7 @@ export default function WordsOfHopeScreen({
                                         left: `${item.x}%`,
                                         top: `${item.y}%`,
                                         transform: `translate(-50%, -50%)`,
-                                        maxWidth: 'min(260px, 40vw)',
+                                        maxWidth: 'min(260px, 45vw)',
                                         textAlign: 'center',
                                         backdropFilter: 'blur(12px)',
                                         WebkitBackdropFilter: 'blur(12px)',
@@ -829,8 +877,8 @@ export default function WordsOfHopeScreen({
                     </div>
 
                     {/* Knowledge Sidebar */}
-                    <div className={`absolute right-4 top-32 z-40 transition-all duration-700 stickman-rescue-sidebar-right ${isSidebarVisible ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0'}`}>
-                        <div className="max-w-[240px] md:max-w-[320px] bg-white/95 rounded-2xl border border-white p-4 md:p-6 shadow-4xl flex flex-col h-fit"
+                    <div className={`absolute right-4 top-24 md:top-32 z-40 transition-all duration-700 stickman-rescue-sidebar-right ${isSidebarVisible ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0'}`}>
+                        <div className="max-w-[200px] xs:max-w-[240px] md:max-w-[320px] bg-white/95 rounded-2xl border border-white p-4 md:p-6 shadow-4xl flex flex-col h-fit"
                             style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
@@ -859,8 +907,8 @@ export default function WordsOfHopeScreen({
                     </div>
 
                     {/* Stigma Alert (Left Side) */}
-                    <div className={`absolute left-4 top-40 z-40 transition-all duration-700 stickman-rescue-sidebar-left ${isAlertVisible ? 'translate-x-0 opacity-100' : 'translate-x-[-120%] opacity-0'}`}>
-                        <div className="max-w-[240px] md:max-w-[320px] bg-slate-900/95 rounded-2xl border border-red-500/30 p-4 md:p-6 shadow-[0_0_30px_rgba(239,68,68,0.2)] flex flex-col h-fit"
+                    <div className={`absolute left-4 top-28 md:top-40 z-40 transition-all duration-700 stickman-rescue-sidebar-left ${isAlertVisible ? 'translate-x-0 opacity-100' : 'translate-x-[-120%] opacity-0'}`}>
+                        <div className="max-w-[200px] xs:max-w-[240px] md:max-w-[320px] bg-slate-900/95 rounded-2xl border border-red-500/30 p-4 md:p-6 shadow-[0_0_30px_rgba(239,68,68,0.2)] flex flex-col h-fit"
                             style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center shadow-[inset_0_0_10px_rgba(239,68,68,0.3)]">
@@ -893,10 +941,10 @@ export default function WordsOfHopeScreen({
                         </div>
                     </div>
 
-                    <div className="absolute top-28 left-8 flex gap-2 z-50">
+                    <div className="absolute top-20 md:top-28 left-4 md:left-8 flex gap-1.5 md:gap-2 z-50">
                         {[...Array(3)].map((_, i) => (
-                            <div key={i} className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center shadow-lg transition-all duration-500 ${i < (3 - mistakes) ? 'bg-teal-500 text-white border-teal-400 shadow-teal-500/20 scale-100' : 'bg-slate-900/40 text-slate-700 border-slate-800 scale-90 opacity-20'}`}>
-                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <div key={i} className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl border-2 flex items-center justify-center shadow-lg transition-all duration-500 ${i < (3 - mistakes) ? 'bg-teal-500 text-white border-teal-400 shadow-teal-500/20 scale-100' : 'bg-slate-900/40 text-slate-700 border-slate-800 scale-90 opacity-20'}`}>
+                                <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                 </svg>
                             </div>
@@ -1079,56 +1127,101 @@ export default function WordsOfHopeScreen({
             )}
 
             {gameState === 'GAME_OVER' && (
-                <div className="relative z-10 max-w-xl w-full p-8 text-center animate-pop-in flex flex-col items-center stickman-rescue-results">
-                    <div className="w-32 h-32 bg-teal-500 rounded-[2.5rem] mb-8 flex items-center justify-center p-6 shadow-2xl border-4 border-white">
+                <div className="relative z-10 max-w-xl w-full p-6 md:p-8 text-center animate-pop-in flex flex-col items-center stickman-rescue-results">
+                    <div className="w-24 h-24 md:w-32 md:h-32 bg-teal-500 rounded-3xl md:rounded-[2.5rem] mb-6 md:mb-8 flex items-center justify-center p-5 md:p-6 shadow-2xl border-2 md:border-4 border-white">
                         <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" />
                         </svg>
                     </div>
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">Don't Give Up!</h2>
-                    <p className="text-teal-200 text-lg md:text-xl font-bold mb-4 uppercase tracking-widest text-balance">Mistakes are part of learning. Try again to master the language of hope.</p>
-                    <div className="flex gap-6 mb-8">
+                    <h2 className="text-3xl md:text-6xl font-black text-white mb-3 md:mb-4 uppercase tracking-tighter">Don't Give Up!</h2>
+                    <p className="text-teal-200 text-base md:text-xl font-bold mb-4 md:mb-6 uppercase tracking-widest text-balance">Mistakes are part of learning. Try again!</p>
+                    <div className="flex gap-4 md:gap-6 mb-6 md:mb-8">
                         <div className="flex flex-col items-center">
-                            <p className="text-white/50 text-xs font-black uppercase tracking-widest">Progress</p>
-                            <p className="text-white text-2xl font-black">{score}/12</p>
+                            <p className="text-white/50 text-[10px] md:text-xs font-black uppercase tracking-widest">Progress</p>
+                            <p className="text-white text-xl md:text-2xl font-black">{score}/12</p>
                         </div>
                         {maxStreak > 0 && (
                             <div className="flex flex-col items-center">
-                                <p className="text-white/50 text-xs font-black uppercase tracking-widest">Best Streak</p>
-                                <p className="text-orange-400 text-2xl font-black">🔥 {maxStreak}</p>
+                                <p className="text-white/50 text-[10px] md:text-xs font-black uppercase tracking-widest">Best Streak</p>
+                                <p className="text-orange-400 text-xl md:text-2xl font-black">🔥 {maxStreak}</p>
                             </div>
                         )}
                     </div>
-                    <div className="flex flex-col gap-4 w-full stickman-rescue-retry-btns">
-                        <button onClick={startGame} className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black uppercase tracking-widest text-lg shadow-xl hover:bg-slate-100 transition-all">Try Again</button>
-                        <button onClick={onExit} className="w-full py-5 bg-white/10 text-white border border-white/20 rounded-2xl font-black uppercase tracking-widest text-xs transition-all opacity-50">Return</button>
+                    <div className="flex flex-col gap-3 md:gap-4 w-full stickman-rescue-retry-btns">
+                        <button onClick={startGame} className="w-full py-4 md:py-5 bg-white text-slate-900 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-base md:text-lg shadow-xl hover:bg-slate-100 transition-all">Try Again</button>
+                        <button onClick={onExit} className="w-full py-3.5 md:py-5 bg-white/10 text-white border border-white/20 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-xs transition-all opacity-50">Return</button>
                     </div>
                 </div>
             )}
 
             {gameState === 'RESULTS' && (
-                <div className="relative z-10 max-w-xl w-full p-8 text-center animate-pop-in flex flex-col items-center stickman-rescue-results">
-                    <div className="w-32 h-32 bg-teal-400 rounded-[2.5rem] mb-8 flex items-center justify-center shadow-2xl border-4 border-white overflow-hidden">
-                        <img src="/stickman_assets/hope_stickman.svg" alt="Success" className="w-20 h-20 drop-shadow-lg" />
+                <div className="relative z-10 max-w-xl w-full p-6 md:p-8 text-center animate-pop-in flex flex-col items-center stickman-rescue-results">
+                    <div className="w-24 h-24 md:w-32 md:h-32 bg-teal-400 rounded-3xl md:rounded-[2.5rem] mb-6 md:mb-8 flex items-center justify-center shadow-2xl border-2 md:border-4 border-white overflow-hidden">
+                        <img src="/stickman_assets/hope_stickman.svg" alt="Success" className="w-16 h-16 md:w-20 md:h-20 drop-shadow-lg" />
                     </div>
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">Rescue Mission</h2>
-                    <div className="flex gap-6 mb-4">
+                    <h2 className="text-3xl md:text-6xl font-black text-white mb-3 md:mb-4 uppercase tracking-tighter">Rescue Mission</h2>
+                    <div className="flex gap-4 md:gap-6 mb-4">
                         <div className="flex flex-col items-center">
-                            <p className="text-teal-200 text-sm font-bold uppercase tracking-widest">Final Score</p>
-                            <p className="text-white text-3xl font-black">{score}/12</p>
+                            <p className="text-teal-200 text-xs md:text-sm font-bold uppercase tracking-widest">Final Score</p>
+                            <p className="text-white text-2xl md:text-3xl font-black">{score}/12</p>
                         </div>
                         {maxStreak > 0 && (
                             <div className="flex flex-col items-center">
-                                <p className="text-orange-200 text-sm font-bold uppercase tracking-widest">Max Streak</p>
-                                <p className="text-orange-400 text-3xl font-black">🔥 {maxStreak}</p>
+                                <p className="text-orange-200 text-xs md:text-sm font-bold uppercase tracking-widest">Max Streak</p>
+                                <p className="text-orange-400 text-2xl md:text-3xl font-black">🔥 {maxStreak}</p>
                             </div>
                         )}
                     </div>
-                    <p className="text-white/50 text-[10px] font-black uppercase tracking-widest mb-12 italic">Lives Saved</p>
-                    <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 mb-12 border border-white/20">
-                        <p className="text-white text-lg font-medium leading-relaxed italic">"You have successfully navigated the language of stigma. Choosing the right words is the first step in saving a life."</p>
+                    <div className="bg-white/10 backdrop-blur-xl rounded-xl md:rounded-2xl p-6 md:p-8 mb-8 md:mb-12 border border-white/20">
+                        <p className="text-white text-sm md:text-lg font-medium leading-relaxed italic">"You have successfully navigated the language of stigma. Choosing the right words is the first step in saving a life."</p>
                     </div>
-                    <button onClick={onExit} className="w-full py-5 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-widest text-lg shadow-2xl hover:bg-teal-400 transition-all">Complete Module</button>
+                    {/* Review Section (Only for Breeze/Easy) */}
+                    {difficulty === 'EASY' && !review.submitted && (
+                        <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 animate-fade-in">
+                            <h3 className="text-teal-400 font-black uppercase tracking-widest text-xs mb-4">How was your learning experience?</h3>
+                            
+                            {/* Star Rating */}
+                            <div className="flex justify-center gap-3 mb-4">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button 
+                                        key={star}
+                                        onClick={() => setReview(prev => ({ ...prev, rating: star }))}
+                                        className={`text-2xl transition-all transform active:scale-90 ${review.rating >= star ? 'scale-110' : 'grayscale opacity-30 hover:opacity-50'}`}
+                                    >
+                                        ⭐
+                                    </button>
+                                ))}
+                            </div>
+
+                            <textarea 
+                                value={review.comment}
+                                onChange={(e) => setReview(prev => ({ ...prev, comment: e.target.value }))}
+                                placeholder="Your thoughts on the language of hope..."
+                                className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-white text-xs font-medium placeholder:text-white/20 focus:outline-none focus:border-teal-500/50 transition-all mb-4 resize-none h-20"
+                            />
+
+                            <button
+                                onClick={handleReviewSubmit}
+                                disabled={review.loading || !review.rating || !review.comment.trim()}
+                                className={`w-full py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all ${review.rating && review.comment.trim() ? 'bg-teal-500/20 text-teal-400 border border-teal-400/30 hover:bg-teal-400/30' : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'}`}
+                            >
+                                {review.loading ? 'Sending...' : 'Submit Feedback'}
+                            </button>
+                        </div>
+                    )}
+
+                    {review.submitted && (
+                        <div className="w-full bg-teal-500/10 border border-teal-500/30 rounded-2xl p-6 mb-8 animate-pop-in">
+                            <p className="text-teal-400 font-black uppercase tracking-widest text-[10px]">Thank you for your feedback! 💖</p>
+                        </div>
+                    )}
+
+
+                    {(difficulty !== 'EASY' || review.submitted) && (
+                        <button onClick={onExit} className="w-full py-4 md:py-5 bg-teal-500 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-base md:text-lg shadow-2xl hover:bg-teal-400 transition-all animate-pop-in">
+                            Complete Module
+                        </button>
+                    )}
                 </div>
             )}
         </div>
