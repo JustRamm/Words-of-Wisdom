@@ -67,7 +67,7 @@ export default function App() {
     return (
         <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}>
             {screen === 'SPLASH' && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+                <div className="fixed inset-0 z-1000 flex items-center justify-center">
                     <GameBackground harmony={50} />
                     <SplashContent />
                 </div>
